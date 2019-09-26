@@ -3,19 +3,19 @@ function model = discreteCVmodel(q, r)
     % continuous time accelleration covariance q and positional
     % measurement with noise with covariance r, both in two dimensions.
     
-    % discrete prediction function
+    % discrete prediction function (eq:4.64)
     model.f = @(x, Ts) [1 0 Ts 0;
                         0 1 0 Ts;
                         0 0 1 0;
-                        0 0 0 1]*x;
+                        0 0 0 1] * x;
                     
-    % jacobian of prediction function
+    % jacobian of prediction function (eq:4.64)
     model.F = @(x, Ts) [1 0 Ts 0;
                         0 1 0 Ts;
                         0 0 1 0;
                         0 0 0 1]; 
                     
-    % additive discrete noise covariance
+    % additive discrete noise covariance (eq:4.64)
     model.Q = @(x, Ts) q * [Ts^3 / 3,   0,          Ts^2 / 2,   0;
                             0,          Ts^3 / 3,   0,          Ts^2 / 2;
                             Ts^2 / 2,   0,          Ts,         0;
@@ -28,6 +28,8 @@ function model = discreteCVmodel(q, r)
     % measurement function jacobian
     model.H = @(x) [1, 0, 0, 0;
                     0, 1, 0, 0];  
-    % additive measurement noise covariance
-    model.R = r; 
+    
+                % additive measurement noise covariance
+    model.R = r * eye(2); 
+
 end
