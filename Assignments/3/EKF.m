@@ -69,8 +69,7 @@ classdef EKF
             % returns the logarithm of the marginal mesurement distribution
             [vk, Sk] = obj.innovation(z, x, P);
             NIS = obj.NIS(z, x, P);
-
-            ll = -0.5*NIS;
+            ll = -0.5 * (NIS + log(det(2 * pi * Sk)));
         end
 
     end

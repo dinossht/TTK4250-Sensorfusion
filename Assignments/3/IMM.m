@@ -155,7 +155,7 @@ classdef IMM
            [spredsprob,smixprobs] = obj.mixProbabilities(sprobs); 
            
            loglikelihood = logSumExp(logLambdas+log(spredprobs));  % Denomenator of eq 6.26
-           supdprobs = exp(logLambdas+log(spredsprob))/exp(loglikelihood);  % eq 6.32
+           supdprobs = exp(logLambdas+log(spredsprob))\exp(loglikelihood);  % eq 6.32
        end
        
        function [supdprobs, xupd, Pupd, loglikelihood] = update(obj, z, sprobs, x, P)
