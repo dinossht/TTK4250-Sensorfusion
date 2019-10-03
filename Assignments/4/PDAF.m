@@ -24,13 +24,14 @@ classdef PDAF
             % predict state distribution
             %
             % x (n x 1): mean to predict
-            % P (n x n): covariance to predict
+            % P (n x n): covariance to predict  
             % Ts (scalar): sampling time
             %
             % xp (n x 1): predicted mean
             % Pp (n x n): predicted covariance
             
-            [xp, Pp] = %...
+            % Standard EKF prediction (7.6)
+            [xp, Pp] = obj.ekf.predict(x, P, Ts);
         end
         
         function gated = gate(obj, Z, x, P)
@@ -47,7 +48,8 @@ classdef PDAF
             gSquared = obj.gateSize;
             
             for j = 1:m
-                gated(j) = %...
+                % NIS from EKF
+                gated(j) = obj.ekf.NIS(Z(:,j), x, P) <= gSquared;
             end
         end
         
@@ -72,10 +74,16 @@ classdef PDAF
             ll = zeros(m + 1, 1);
             
             % calculate log likelihood ratios
+            
+            % for a_k=0, no detection
             ll(1) = logPND + logClutter; 
-            for j = 1:m
-                llCond(j) = %... %l^a
-                ll(j + 1) = %...
+            
+            % for a_k>0
+            for j = 1:m        
+%%---------------------------------------------------------------------------
+                llCond(j) = obj.ekf.loglikelihood(Z(j), x, P); %l^a / log(l^a)
+                ll(j + 1) = logPD + llCond(j);
+%%---------------------------------------------------------------------------
             end
         end
         
@@ -93,7 +101,7 @@ classdef PDAF
            lls = obj.loglikelihoodRatios(Z, x, P);
            
            % probabilities
-           beta = %... 
+           beta = exp(lls-logSumExp(lls));   %%%%%%%%%%%%%%%%%%
         end
         
         function [xupd, Pupd] = conditionalUpdate(obj, Z, x, P)
@@ -120,7 +128,7 @@ classdef PDAF
             
             % detected
             for j = 1:m 
-               [xupd(:, j + 1), Pupd(:, :, j + 1)] = %...
+                [xupd(:, j + 1), Pupd(:, :, j + 1)] = obj.ekf.update(Z(j), x, P); %%%
             end
         end
         
@@ -134,7 +142,7 @@ classdef PDAF
             % xred (n x 1): the mean of the mixture
             % Pred (n x n): the covariance of the mixture
             
-            [xred, Pred] = %... % Hint: reduceGaussMix from assignment 3
+            [xred, Pred] = reduceGaussMix(beta, x, P);% Hint: reduceGaussMix from assignment 3
         end
         
         function [xupd, Pupd] = update(obj, Z, x, P)
@@ -148,17 +156,17 @@ classdef PDAF
             % Pupd (n x n): the covariance of the PDAF update
             
             % remove the not gated measurements from consideration
-            gated = % ... 
+            gated = obj.gate(Z, x, P);
             Zg = Z(:, gated);
             
             % find association probabilities
-            beta = % ...
+            beta = obj.associationProbabilities(Zg, x, P);
             
             % find the mixture components pdfs
-            [xcu, Pcu] = %...
+            [xcu, Pcu] = obj.reduceMixture(beta, x, P);
             
             % reduce mixture
-            [xupd, Pupd] = %...
+            [xupd, Pupd] = obj.ekf.update(Zg, xcu, Pcu);
         end
     end
 end
