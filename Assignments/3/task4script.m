@@ -20,12 +20,12 @@ scatter(Z(1,:), Z(2, :));
 
 %%
 % tune single filters
-r = 10;       % pos. measurement noise covariance            %%%%%%%%%%%%%%%
-qCV = 4;     % acceleration covariance                      %%%%%%%%%%%%%%%
-qCT = [1 1]; % acceleration, turn rate covariance           %%%%%%%%%%%%%%%
+r = 5;                      % pos. measurement noise covariance            
+qCV = 0.05;                 % acceleration covariance                      
+qCT = [0.005 , 0.000025];   % acceleration, turn rate covariance           
 %%
 % choose model to tune
-s = 1;                                                      %%%%%%%%%%%%%%%
+s = 1;                                                      
 
 % make models
 models =  cell(2,1);
@@ -39,19 +39,21 @@ xhat = zeros(5, 100);
 Phat = zeros(5, 5, 100);
 NIS = zeros(100, 1);
 
-% initialize filter
-xbar(1:4, 1) = [0 0 1 1]';
-Pbar(1:4,1:4,1) = diag([50 50 10 10].^2);
+% initialize filter %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+xbar(:, 1) = [0 0 1 1 1]';
+Pbar(:,:,1) = diag([50 50 10 10 10].^2);
 
 % filter
 for k = 1:K
+    NISes(k) = models{s}.NIS(Z(:,k),xbar(:,k),Pbar(:,:,k));
+    
     % estimate
-    [xhat(1:4,k),Phat(1:4,1:4,k)] = ...
-        ekf.update(Z(:,k),xbar(1:4,k),Pbar(1:4,1:4,k));
+    [xhat(:,k),Phat(:,:,k)] = ...
+        models{s}.update(Z(:,k),xbar(:,k),Pbar(:,:,k));
 
     if k < K
-        [xbar(1:4,k+1),Pbar(1:4,1:4,k+1)] = ...
-            ekf.predict(xhat(1:4,k),Phat(1:4,1:4,k),Ts);
+        [xbar(:,k+1),Pbar(:,:,k+1)] = ...
+            models{s}.predict(xhat(:,k),Phat(:,:,k),Ts);
     end    
 end 
 
@@ -69,13 +71,13 @@ velRMSE = sqrt(mean(sum((xhat(3:4,:)-Xgt(3:4 ,:)).^2,1))); % velocity RMSE
 figure(3); clf; grid on; hold on;
 plot(Xgt(1,:), Xgt(2,:));
 plot(xhat(1,:), xhat(2, :));
-title(sprintf('q = %f, r = %f, posRMSE = %f, velRMSE= %f',q, r, posRMSE, velRMSE));
+title(sprintf('q = %f, r = %f, posRMSE = %f, velRMSE= %f',qCV, r, posRMSE, velRMSE));
 %%%%%%%%%%%%
 
 
 % consistency
-confidenceInterval = % ...
-ANIS = mean(NIS)
+confidenceInterval = chi2inv([0.025,0.975],K*2)/K;
+ANIS = mean(NISes);
 
 % plot
 figure(2); clf; hold on; grid on;
