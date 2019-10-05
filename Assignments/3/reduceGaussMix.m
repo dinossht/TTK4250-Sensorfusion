@@ -18,26 +18,14 @@ function [xmix, Pmix] = reduceGaussMix(w, x, P)
     xmix = zeros(n, 1);
     Pmix = zeros(n, n);
     
-    %% mean %    
+    %% mean   
     for i=1:M
-        xmix = xmix+w(i)*x(:,i);
+        xmix = xmix+x(:,i)*w(i);
     end
     
     %% covariance
-    
-    % first term in covariance of gaussian mixture
-    Pmix1 = zeros(n,n);
-    for i=1:M
-        Pmix1 = Pmix1+w(i)*P(:,:,i);
+    for i = 1:M
+        mixInnovation = x(:,i)-xmix ;
+        Pmix = Pmix+(P(:,:,i)+mixInnovation*mixInnovation')*w(i);
     end
-    
-    % second term, spread of the innovations term
-    Pmix2 = zeros(n,n);
-    for i=1:M
-        Pmix2 = Pmix2+w(i)*x(:,i)*x(:,i)';
-    end
-    Pmix2 = Pmix2-xmix*xmix';
-
-    Pmix = Pmix1+Pmix2;
-    
 end
