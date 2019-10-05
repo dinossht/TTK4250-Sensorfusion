@@ -31,17 +31,15 @@ classdef EKF
         
         function [xp, Pp] = predict(obj, x, P, Ts)
             % returns the predicted mean and covariance for a time step Ts
-            Fk = obj.F(x, Ts);
-            
-            xp = obj.f(x, Ts);
-            Pp = Fk*P*Fk'+obj.Q(x,Ts);
+            xp = obj.f(x,Ts);  % line2,alg2          
+            Fk = obj.F(x,Ts);  % line3,alg2
+            Pp = Fk*P*Fk'+obj.Q(x,Ts);  % line4,alg2
         end
 
         function [vk, Sk] = innovation(obj, z, x, P)
             % returns the innovation and innovation covariance
+            vk = z-obj.h(x);
             Hk = obj.H(x);
-            zp = obj.h(x);
-            vk = z-zp;
             Sk = Hk*P*Hk'+obj.R;
         end
 
@@ -50,26 +48,25 @@ classdef EKF
             % measurement
             [vk, Sk] = obj.innovation(z, x, P);
             Hk = obj.H(x);
-            I = eye(size(P));
-            
-            Wk = P*Hk'*inv(Sk);
-
+            Wk = P*Hk'/Sk;
             xupd = x+Wk*vk;
+            I = eye(size(P));
             Pupd = (I-Wk*Hk)*P; 
         end
 
         function NIS = NIS(obj, z, x, P)
             % returns the normalized innovation squared
             [vk, Sk] = obj.innovation(z, x, P);
-            
             NIS = vk'*inv(Sk)*vk;
         end
 
         function ll = loglikelihood(obj, z, x, P)
             % returns the logarithm of the marginal mesurement distribution
-            [vk, Sk] = obj.innovation(z, x, P);
-            NIS = obj.NIS(z, x, P);
-            ll = -0.5 * (NIS + log(det(2 * pi * Sk)));
+            % This is equivalent to implement the logarithm of the distribution of the innovation,
+            % log(N (vk; 0, HP HT + R));
+            [vk,Sk] = obj.innovation(z,x,P);
+            NIS = obj.NIS(z,x,P);
+            ll = -0.5*(NIS+log(det(2*pi*Sk)));
         end
 
     end
