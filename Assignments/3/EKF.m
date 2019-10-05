@@ -40,7 +40,7 @@ classdef EKF
             % returns the innovation and innovation covariance
             vk = z-obj.h(x);
             Hk = obj.H(x);
-            Sk = Hk*P*Hk'+obj.R;
+            Sk = Hk*P*Hk'+obj.R(x);
         end
 
         function [xupd, Pupd] = update(obj, z, x, P)
