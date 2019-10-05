@@ -34,26 +34,16 @@ classdef IMM
            
            %% Joint probability for this model and next
            % numerator of (eq 6.26) (M x M)
-           spsjointprobs = zeros(obj.M,obj.M);
-           for i=1:obj.M
-               for j=1:obj.M
-                   spsjointprobs(i,j) = obj.PI(i,j)*sprobs(j);
-               end
-           end
+           spsjointprobs = obj.PI.*(ones(obj.M,1)*sprobs(:)');
            
            %% marginal probability for next model
            % denominator of (eq 6.26), normalization constant (M x 1)
-           spredprobs = obj.PI*sprobs;  
+           spredprobs = sum(spsjointprobs,2);
            
            %% conditionional probability for model at this time step on the next.
            % (eq 6.26) (M x M)
-           smixprobs = zeros(obj.M,obj.M);
-           for i=1:obj.M
-               for j=1:obj.M
-                   smixprobs(i,j) = spsjointprobs(i,j)/spredprobs(i);
-               end
-           end           
-           
+           smixprobs = spsjointprobs./(spredprobs*ones(1,obj.M)) ;    
+                     
        end
        
        function [xmix, Pmix] = mixStates(obj, smixprobs, x, P)
@@ -70,8 +60,8 @@ classdef IMM
            Pmix = zeros(size(P));
            
            % mix for each mode
-           for i=1:obj.M
-                [xmix(:,i), Pmix(:,:,i)] = reduceGaussMix(smixprobs(i,:), x(:,i), P(:,:,i))
+           for s=1:obj.M
+                [xmix(:,s), Pmix(:,:,s)] = reduceGaussMix(smixprobs(s,:),x,P);
            end
        end
        
@@ -89,8 +79,8 @@ classdef IMM
            Ppred = zeros(size(P));
            
            %% mode matched prediction
-           for i=1:obj.M
-               [xpred(:,i), Ppred(:,:,i)] = obj.modeFilters{i}.predict(x(:,i),P(:,:,i),Ts)
+           for s=1:obj.M
+               [xpred(:,s), Ppred(:,:,s)] = obj.modeFilters{s}.predict(x(:,s),P(:,:,s),Ts);
            end
            
        end
@@ -132,14 +122,15 @@ classdef IMM
            logLambdas = zeros(obj.M, 1);
            
            % mode matched update and likelihood
-           for i=1:obj.M
-               [xupd(:,i),Pupd(:,:,i)] = obj.modeFilters{i}.update(z,x(:,i),P(:,:,i));
-               logLambdas(i) = obj.modeFilters{i}.loglikelihood(z,x(:,i),P(:,:,i));
+           for s=1:obj.M
+               filter = obj.modeFilters{s};
+               [xupd(:,s),Pupd(:,:,s)] = filter.update(z,x(:,s),P(:,:,s));
+               logLambdas(s) = filter.loglikelihood(z,x(:,s),P(:,:,s));
            end
        
        end
        
-       function [supdprobs, loglikelihood] = updateProbabilities(obj,sc logLambdas, sprobs)
+       function [supdprobs, loglikelihood] = updateProbabilities(obj, logLambdas, sprobs)
            % IMM: step 4
            %
            % logLambdas (M x 1): measurement loglikelihood for given modes
@@ -151,11 +142,11 @@ classdef IMM
            % you might want to do some precalculations here.
            
            % you might want to use the logSumExp function at the bottom of this file       
+
+           supdprobs = logLambdas(:)+log(sprobs(:));
+           loglikelihood = logSumExp(supdprobs);  % Denomenator of eq 6.26
+           supdprobs = exp(supdprobs-loglikelihood);  % eq 6.32
            
-           [spredsprob,smixprobs] = obj.mixProbabilities(sprobs); 
-           
-           loglikelihood = logSumExp(logLambdas+log(spredprobs));  % Denomenator of eq 6.26
-           supdprobs = exp(logLambdas+log(spredsprob))\exp(loglikelihood);  % eq 6.32
        end
        
        function [supdprobs, xupd, Pupd, loglikelihood] = update(obj, z, sprobs, x, P)
