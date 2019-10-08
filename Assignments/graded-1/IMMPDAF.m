@@ -84,7 +84,7 @@ classdef IMMPDAF
             ll(1) = logPND + logClutter; % association loglikelihood ratio for no detection
             for j = 1:m
                 % use IMM's update function and simply discard some of the outputs
-                [supdprobs, xupd, Pupd, loglikelihood] = obj.imm.update(Z(j), sprobs, x, P);
+                [supdprobs, xupd, Pupd, loglikelihood] = obj.imm.update(Z(:,j), sprobs, x, P);
                 llCond(j) = loglikelihood; % calculate imm loglikelihood (log(l^a))
                 ll(j + 1) = logPD + llCond(j); % association loglikelihood ratio for detection j
             end
@@ -138,7 +138,7 @@ classdef IMMPDAF
             % detected
             for j = 1:m 
                [sprobsupd(:, j + 1), xupd(:, :, j + 1), Pupd(:, :, :, j + 1)] =...
-                   obj.imm.update(Z(j), sprobs, x, P);  % update conditioned on measurement j
+                   obj.imm.update(Z(:,j), sprobs, x, P);  % update conditioned on measurement j
             end
         end
         
