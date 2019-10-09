@@ -153,7 +153,7 @@ for qi = 1: Nvals
     end
 end
 
-% calculate averages
+% calculate averages r x q x time
 ANEES = mean(NEES,3);
 ANIS = mean(NIS,3);
 Ainnov = mean(innovs,4) ;
