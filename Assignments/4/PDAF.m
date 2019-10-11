@@ -80,10 +80,8 @@ classdef PDAF
             
             % for a_k>0
             for j = 1:m        
-%%---------------------------------------------------------------------------
-                llCond(j) = obj.ekf.loglikelihood(Z(j), x, P); %l^a / log(l^a)
+                llCond(j) = obj.ekf.loglikelihood(Z(:,j), x, P); %l^a / log(l^a)
                 ll(j + 1) = logPD + llCond(j);
-%%---------------------------------------------------------------------------
             end
         end
         
@@ -101,7 +99,7 @@ classdef PDAF
            lls = obj.loglikelihoodRatios(Z, x, P);
            
            % probabilities
-           beta = exp(lls-logSumExp(lls));   %%%%%%%%%%%%%%%%%%
+           beta = exp(lls-logSumExp(lls));   
         end
         
         function [xupd, Pupd] = conditionalUpdate(obj, Z, x, P)
@@ -128,7 +126,7 @@ classdef PDAF
             
             % detected
             for j = 1:m 
-                [xupd(:, j + 1), Pupd(:, :, j + 1)] = obj.ekf.update(Z(j), x, P); %%%
+                [xupd(:, j + 1), Pupd(:, :, j + 1)] = obj.ekf.update(Z(:,j), x, P); 
             end
         end
         
@@ -163,10 +161,10 @@ classdef PDAF
             beta = obj.associationProbabilities(Zg, x, P);
             
             % find the mixture components pdfs
-            [xcu, Pcu] = obj.reduceMixture(beta, x, P);
+            [xcu, Pcu] = obj.conditionalUpdate(Zg,x,P);
             
             % reduce mixture
-            [xupd, Pupd] = obj.ekf.update(Zg, xcu, Pcu);
+            [xupd, Pupd] = obj.reduceMixture(beta,xcu,Pcu);
         end
     end
 end
