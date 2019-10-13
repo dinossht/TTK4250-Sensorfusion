@@ -94,7 +94,7 @@ Pbar(:, : ,1) = diag([25, 25, 3, 3, 0.0005].^2);
 % filter
 for k = 1:K
     [xhat(:, k) , Phat(:, :, k)] = tracker{s}.update(Z{k}, xbar(:, k), Pbar(:,: ,k));
-    NEES(k) = ((xhat(:, k) - Xgt(1:5, k))' / squeeze(Phat(:, :, k))) * (xhat(:, k) - Xgt(1:5, k));
+    NEES(k) = ((xhat(:, k) - Xgt(:, k))' / squeeze(Phat(:, :, k))) * (xhat(:, k) - Xgt(:, k));
     NEESpos(k) = ((xhat(1:2, k) - Xgt(1:2, k))' / squeeze(Phat(1:2, 1:2, k))) * (xhat(1:2, k) - Xgt(1:2, k));
     NEESvel(k) = ((xhat(3:4, k) - Xgt(3:4, k))' / squeeze(Phat(3:4, 3:4, k))) * (xhat(3:4 ,k) - Xgt(3:4 ,k));
     if k < K
@@ -153,28 +153,28 @@ ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
-%{
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART II %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % IMM-PDA
 
 % sensor 
-r = %...
-lambda = %...
-PD = %...
-gateSize = %...
+r = 6;
+lambda = 1e-3;
+PD = 0.8;
+gateSize = 10^2;
 
 % dynamic models
-qCV = %...
-qCT = %...
-x0 = %...
-P0 = %...
+qCV = 0.1;
+qCT = [0.005, 0.000025];
+x0 = [0; 0; 2; 0; 0];
+P0 = eye(5);
 
 % markov chain (you are free to parametrize this in another way)
-PI11 = %...
-PI22 = %... 
-p10 = %... 
+PI11 = 0.95;
+PI22 = 0.95;
+p10 = 0.5; 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PI = [PI11, (1 - PI22); (1 - PI11), PI22]; assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
 sprobs0 = [p10; (1 - p10)]; assert(sum(sprobs0) == 1, 'initial mode probabilities must sum to 1');
@@ -207,13 +207,18 @@ probbar(:, 1) = sprobs0;
 
 % filter
 for k=1:100
-    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = %... update
-    [xest(:, k), Pest(:, :, k)] = %... total state mean and cov
-    NEES(k) = % ... 
-    NEESpos(k) = % ...
-    NEESvel(k) = % ...
+    % Update
+    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = tracker.update(Z{k}, probbar(:, k), xbar(:, :, k), Pbar(:, :, :, k));
+    
+    % Total state mean and cov
+    [xest(:, k), Pest(:, :, k)] =  tracker.imm.estimate(probhat(: , k), xhat(:, :, k), Phat(:, :, :, k));
+    
+    NEES(k) = (xest(:, k) - Xgt(:, k))' * (Pest(:, :, k) \ (xest(:, k) - Xgt(:, k)));
+    NEESpos(k) = (xest(1:2, k) - Xgt(1:2, k))' * (Pest(1:2, 1:2, k ) \ (xest(1:2, k) - Xgt(1:2, k)));
+    NEESvel(k) = (xest(3:4, k) - Xgt(3:4, k))' * (Pest(3:4, 3:4, k ) \ (xest(3:4, k) - Xgt(3:4, k)));
     if k < 100
-        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = %... predict
+        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = ...
+            tracker.predict(probhat(:, k), xhat(:, :, k), Phat(:, :, :, k), Ts);
     end
 end
 
@@ -350,5 +355,3 @@ for k = plotRange
     drawnow;
     pause(plotpause)
 end
-
-%}
