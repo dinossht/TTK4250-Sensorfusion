@@ -189,10 +189,10 @@ classdef IMMPDAF
             beta = obj.associationProbabilities(Zg, sprobs, x, P);
             
             % find the mixture components (conditional update)
-            [sprobscu, xcu, Pcu] = obj.reduceMixture(beta, sprobs, x, P);
+            [sprobscu, xcu, Pcu] = obj.conditionalUpdate(Zg, sprobs, x, P);
             
             % reduce mixture
-            [sprobsupd, xupd, Pupd] = obj.imm.update(Zg, sprobscu, xcu, Pcu);
+            [sprobsupd, xupd, Pupd] = obj.reduceMixture(beta, sprobscu, xcu, Pcu);
         end
     end
 end
