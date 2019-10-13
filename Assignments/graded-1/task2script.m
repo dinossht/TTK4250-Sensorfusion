@@ -1,4 +1,7 @@
-% load data
+%% 
+clc; clear; close all;
+
+%% load data
 usePregen = true; % you can generate your own data if set to false
 if usePregen
     load task2data.mat;
@@ -56,16 +59,16 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART I %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Look at individual EKF-PDAs
-r = 10; 
-qCV = 1.0;
-qCT = [6.5, 6.5];
+r = 5; 
+qCV = 0.1;                  % acceleration covariance                      
+qCT = [0.05 , 0.000025];   % acceleration, turn rate covariance   
 
 lambda = 1e-3;
 PD = 0.8;
 gateSize = 5^2;
 % choose model to tune
-s = 1;
-
+s = 2;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make models
 models =  cell(2,1);
 models{1} = EKF(discreteCVmodel(qCV, r));
@@ -172,7 +175,7 @@ P0 = %...
 PI11 = %...
 PI22 = %... 
 p10 = %... 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PI = [PI11, (1 - PI22); (1 - PI11), PI22]; assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
 sprobs0 = [p10; (1 - p10)]; assert(sum(sprobs0) == 1, 'initial mode probabilities must sum to 1');
 

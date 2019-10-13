@@ -99,6 +99,7 @@ plot(poserr); grid on;
 subplot(3,1,3)
 plot(velerr); grid on;
 %%
+%{
 % tune IMM by only looking at the measurements
 r = %...;
 qCV = %...;
@@ -259,3 +260,5 @@ ciNEES = chi2inv([0.05, 0.95], 4);
 inCI = sum((NIS >= ciNEES(1)) .* (NIS <= ciNEES(2)))/K;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+
+%}
