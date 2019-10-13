@@ -35,6 +35,7 @@ plot(Xgt(1,:),Xgt(2,:), 'LineWidth',1.5);
 title('True trajectory and the nearby measurements')
 %%
 % play measurement movie. Remember that you can click the stop button.
+%{
 figure(2); clf; grid on;
 set(gcf,'Visible','on')
 plotpause = 0.1; % sets a pause in between time steps if it goes to fast
@@ -50,6 +51,7 @@ for k = 1:K
     drawnow;
     pause(plotpause);
 end
+%}
 %%
 % Look at individual EKF-PDAs
 r = %...
