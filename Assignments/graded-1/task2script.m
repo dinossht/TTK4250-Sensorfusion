@@ -59,8 +59,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART I %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Look at individual EKF-PDAs
-r = 5; 
-qCV = 0.1;                  % acceleration covariance                      
+r = 6; 
+qCV = 0.05;                % acceleration covariance                      
 qCT = [0.05 , 0.000025];   % acceleration, turn rate covariance   
 
 lambda = 1e-3;
