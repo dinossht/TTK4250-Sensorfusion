@@ -155,20 +155,28 @@ classdef IMMPDAF
             % Pred (n x n x M): the covariance of the mode mixtures
             
             M = size(sprobs, 1);
+            mplus1 = size(sprobs, 2);
             
-            joint = %.. Joint probability for mode and association (M x m + 1)
-            sprobsred = %... marginal mode probabilities (M x 1)
-            betaCondS = %... association probabilites conditionend on the mode probabilites (M x m + 1)
+            % Joint probability for mode and association (M x m + 1)
+            joint = sprobs .* (ones(M, 1) * beta');
+            
+            % Marginal mode probabilities (M x 1)
+            sprobsred = sum(joint, 2); 
+            
+            % Association probabilites conditionend on the mode probabilites (M x m + 1)
+            betaCondS = joint ./ (sprobsred * ones(1, mplus1));
             
             xSize = size(x);
             PSize = size(P);
             xred = zeros(xSize(1:2));
             Pred = zeros(PSize(1:3));
-            for s = 1:M
-                [xred(:, s), Pred(:, : ,s)] = %... mean and variance per mode
+            
+            for s = 1:M                
+                % Mean and variance per mode
+                [xred(:, s), Pred(:, : ,s)] = reduceGaussMix(betaCondS(s, :), x(:, s, :), P(:, :, s, :)); 
             end
         end
-        
+
         function [sprobsupd, xupd, Pupd] = update(obj, Z, sprobs, x, P)
             % The whole PDAF update sycle.
             %
