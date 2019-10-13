@@ -288,7 +288,7 @@ text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 %%
 %estimation "movie"
 mTL = 0.2; % maximum transparancy (between 0 and 1);
-plotpause = 1; % lenght to pause between time steps;
+plotpause = 0;%1; % lenght to pause between time steps;
 plotRange = 2:K % the range to go through
 N = 50; % number of points to use for ellipse;
 
