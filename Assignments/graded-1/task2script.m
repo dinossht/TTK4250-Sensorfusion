@@ -52,15 +52,17 @@ for k = 1:K
     pause(plotpause);
 end
 %}
-%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART I %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Look at individual EKF-PDAs
-r = %...
-qCV = %...
-qCT = %...
+r = 10; 
+qCV = 1.0;
+qCT = [6.5, 6.5];
 
-lambda = %...
-PD = %...
-gateSize = %...
+lambda = 1e-3;
+PD = 0.8;
+gateSize = 5^2;
 % choose model to tune
 s = 1;
 
@@ -88,12 +90,12 @@ Pbar(:, : ,1) = diag([25, 25, 3, 3, 0.0005].^2);
 
 % filter
 for k = 1:K
-    [xhat(:, k), Phat(:, :, k)] = %... update
-    NEES(k) = %... 
-    NEESpos(k) = %...
-    NEESvel(k) = %...
+    [xhat(:, k) , Phat(:, :, k)] = tracker{s}.update(Z{k}, xbar(:, k), Pbar(:,: ,k));
+    NEES(k) = ((xhat(:, k) - Xgt(1:5, k))' / squeeze(Phat(:, :, k))) * (xhat(:, k) - Xgt(1:5, k));
+    NEESpos(k) = ((xhat(1:2, k) - Xgt(1:2, k))' / squeeze(Phat(1:2, 1:2, k))) * (xhat(1:2, k) - Xgt(1:2, k));
+    NEESvel(k) = ((xhat(3:4, k) - Xgt(3:4, k))' / squeeze(Phat(3:4, 3:4, k))) * (xhat(3:4 ,k) - Xgt(3:4 ,k));
     if k < K
-        [xbar(:, k+1), Pbar(:, :, k+1)] = %... predict
+        [xbar(:, k+1), Pbar(:, :, k+1)] = tracker{s}.predict(xhat(:, k), Phat(:, :, k), Ts);
     end
 end
 
@@ -148,7 +150,10 @@ ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
-%%
+%{
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART II %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % IMM-PDA
 
 % sensor 
@@ -342,3 +347,5 @@ for k = plotRange
     drawnow;
     pause(plotpause)
 end
+
+%}
