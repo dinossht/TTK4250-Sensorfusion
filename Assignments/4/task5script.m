@@ -38,7 +38,7 @@ title('True trajectory and the nearby measurements')
 % play measurement movie. Remember that you can click the stop button.
 figure(4); clf; grid on;
 set(gcf,'Visible','on')
-% % plotpause = 0; % sets a pause in between time steps if it goes to fast
+plotpause = 0; % sets a pause in between time steps if it goes to fast
 for k = 1:K
     scatter(Z{k}(1,:), Z{k}(2,:))
     title(sprintf('measurements at step %d', k))
@@ -48,12 +48,12 @@ for k = 1:K
     pause(plotpause);
 end
 %%
-q = %...;
-r = %...;
+q = 6.5;
+r = 10;
 
-PD = %...;
-lambda = %...;
-gatesize = %...;
+PD = 0.8;
+lambda = 1e-3;
+gatesize = 5^2;
 
 model = discreteCVmodel(q, r);
 ekf = EKF(model);
@@ -74,13 +74,17 @@ Pbar(:, : , 1) = [2*r*eye(2), zeros(2); % slightly overly uncertain position
                   zeros(2), 20^2*eye(2)]; % slightly overerly uncertain velocity
 
 % estimate
-for k = 1:K
-    [xhat(:, k), Phat(:, :, k)] = %... 
-    NEES(k) = %...
-    NEESpos(k) = %...
-    NEESvel(k) = %...
-    [xbar(:, k + 1), Pbar(:,:, k + 1)] = %...
+for k = 1: K
+    [xhat(:, k), Phat(:, :, k)] = tracker.update(Z {k}, xbar(:, k), Pbar(:, :, k));
+    NEES(k) = ((xhat(:, k) - Xgt(1:4, k))' / squeeze(Phat(:, :, k))) * (xhat(:, k) - Xgt(1:4, k));
+    NEESpos(k) = ((xhat(1:2, k) - Xgt(1:2, k))' / squeeze(Phat(1:2, 1:2, k))) * (xhat(1:2, k) - Xgt(1:2, k));
+    NEESvel(k) = ((xhat(3:4, k) - Xgt(3:4, k))' / squeeze(Phat(3:4, 3:4, k))) * (xhat(3:4 ,k) - Xgt(3:4 ,k));
+    if k < K
+        [xbar(:, k + 1), Pbar(:, :, k + 1)] = tracker.predict(xhat(:, k), Phat(:, :, k), Ts);
+    end
 end
+
+
 
 % calculate a performance metric
 posRMSE = sqrt(mean(sum((xhat(1:2, :) - Xgt(1:2, :)).^2, 1))); % position RMSE
@@ -92,7 +96,7 @@ plot(Xgt(1,:), Xgt(2,:));
 title(sprintf('q = %f, r = %f, posRMSE = %f, velRMSE= %f',q, r, posRMSE, velRMSE));
 
 figure(3); clf;
-alpha = %...;
+alpha = 0.05;
 CI2 = chi2inv([alpha/2, 1 - alpha/2], 2);
 CI4 = chi2inv([alpha/2, 1 - alpha/2], 4);
 
