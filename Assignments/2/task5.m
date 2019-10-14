@@ -1,4 +1,6 @@
-% get and plot the data
+clc; clear; close all;
+
+%% get and plot the data
 usePregen = true % choose between own generated data and pregenerated
 if usePregen
     load task5data.mat
@@ -49,7 +51,7 @@ Pbar = zeros(4, 4, K);
 Phat = zeros(4, 4, K);
 
 % set parameters
-q = 13;
+q = 4;
 r = 10;
 
 % create the model and estimator object
