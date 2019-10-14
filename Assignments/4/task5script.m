@@ -36,6 +36,7 @@ plot(Xgt(1,:),Xgt(2,:), 'LineWidth',1.5);
 title('True trajectory and the nearby measurements')
 %%
 % play measurement movie. Remember that you can click the stop button.
+%{
 figure(4); clf; grid on;
 set(gcf,'Visible','on')
 plotpause = 0; % sets a pause in between time steps if it goes to fast
@@ -47,6 +48,7 @@ for k = 1:K
     drawnow;
     pause(plotpause);
 end
+%}
 %%
 q = 6.5;
 r = 10;
