@@ -174,7 +174,7 @@ P0 = eye(5);
 % markov chain (you are free to parametrize this in another way)
 PI11 = 0.95;
 PI22 = 0.95;
-p10 = 0.5; 
+p10 = 0.5;  % initial mode probability
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PI = [PI11, (1 - PI22); (1 - PI11), PI22]; assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
 sprobs0 = [p10; (1 - p10)]; assert(sum(sprobs0) == 1, 'initial mode probabilities must sum to 1');

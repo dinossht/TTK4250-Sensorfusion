@@ -1,3 +1,4 @@
+clc; clear; close all;
 % load data
 usePregen = true; % you can generate your own data if set to false
 if usePregen
@@ -23,7 +24,7 @@ scatter(Z(1,:), Z(2, :));
 r = 5;                      % pos. measurement noise covariance            
 qCV = 0.05;                 % acceleration covariance                      
 qCT = [0.005 , 0.000025];   % acceleration, turn rate covariance           
-%%
+
 % choose model to tune
 s = 1;                                                      
 
@@ -74,7 +75,7 @@ plot(xhat(1,:), xhat(2, :));
 title(sprintf('q = %f, r = %f, posRMSE = %f, velRMSE= %f',qCV, r, posRMSE, velRMSE));
 %%%%%%%%%%%%
 
-
+%%
 % consistency
 confidenceInterval = chi2inv([0.025,0.975],K*2)/K;
 ANIS = mean(NISes);
@@ -99,12 +100,15 @@ plot(poserr); grid on;
 subplot(3,1,3)
 plot(velerr); grid on;
 %%
-%{
+
 % tune IMM by only looking at the measurements
-r = %...;
-qCV = %...;
-qCT = [%..., %...];
-PI = [%..., %...; %..., %...];
+r = 5;                      % pos. measurement noise covariance            
+qCV = 0.0025;                 % acceleration covariance                      
+qCT = [0.005 , 0.00005];   % acceleration, turn rate covariance 
+
+PI11 = 0.95;
+PI22 = 0.95;
+PI = [PI11, (1 - PI22); (1 - PI11), PI22];
 assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
 
 % make model
@@ -126,24 +130,33 @@ NIS = zeros(K, 1);
 NISes = zeros(2, K);
 
 % initialize
-xbar(:, :, 1) = repmat(%..., [1, 2]);
-Pbar(:, : ,:, 1) = repmat(%...,[1,1,2]);
-probbar(:, 1) = [%...; %...];
+x0 = [0; 0; 2; 0; 0];
+xbar(:, :, 1) = repmat(x0, [1, 2]);
+
+P0 = diag ([25 , 25 , 3, 3, 0.0005].^2);
+Pbar(:, : ,:, 1) = repmat(P0,[1,1,2]);
+
+p10 = 0.9;
+sprobs0 = [p10; (1 - p10)]
+probbar(:, 1) = sprobs0;
 
 % filter
 for k=1:100
-    [NIS(k), NISes(:, k)] = ...
+    [NIS(k), NISes(:, k)] = imm.NIS(Z(:, k), probbar(:, k),xbar(:, :, k), Pbar(:,:,:,k));
+
     [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = ...
-        %...
-    [xest(:, k), Pest(:, :, k)] = %...
+        imm.update(Z(:, k), probbar(:, k), xbar(:, :, k), Pbar(: ,:, :, k));
+
+    [xest(:, k), Pest(:, :, k)] = imm.estimate(probhat(:, k), xhat(: ,:, k), Phat(:, :, :, k));
+    NEES(k) = (xest(1:4, k) - Xgt(1:4, k))' * (Pest(1:4, 1:4, k) \ (xest(1:4, k) - Xgt(1:4, k)));
     if k < 100
-        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = ...
-            %...
+        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] =...
+            imm.predict(probhat(:, k), xhat(:, :, k), Phat(:, :, :, k), Ts);
     end
 end
 
 % consistency
-confidenceInterval = % ...
+confidenceInterval = chi2inv([0.025, 0.975], K * 2) / K;
 ANIS = mean(NIS)
 
 % plot
@@ -166,10 +179,13 @@ plot(NISes')
 ylabel('NIS')
 %%
 % tune IMM by looking at ground truth
-r = %...;
-qCV = %...;
-qCT = [%..., %...];
-PI = [%...,%...; %..., %...];
+r = 5;                      % pos. measurement noise covariance            
+qCV = 0.0025;                 % acceleration covariance                      
+qCT = [0.005 , 0.00005];   % acceleration, turn rate covariance 
+
+PI11 = 0.95;
+PI22 = 0.95;
+PI = [PI11, (1 - PI22); (1 - PI11), PI22];
 assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
 
 % make model
@@ -192,36 +208,44 @@ NISes = zeros(2, K);
 NEES = zeros(K, 1);
 
 % initialize
-xbar(:, :, 1) = repmat(%..., [1, 2]);
-Pbar(:, : ,:, 1) = repmat(%...,[1,1,2]);
-probbar(:, 1) = [%...; %...];
+x0 = [0; 0; 2; 0; 0];
+xbar(:, :, 1) = repmat(x0, [1, 2]);
+
+P0 = diag ([25 , 25 , 3, 3, 0.0005].^2);
+Pbar(:, : ,:, 1) = repmat(P0,[1,1,2]);
+
+p10 = 0.9;
+sprobs0 = [p10; (1 - p10)]
+probbar(:, 1) = sprobs0;
 
 % filter
 for k=1:100
-    [NIS(k), NISes(:, k)] = %...
-    
-    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = %...
-    
-    [xest(:, k), Pest(:, :, k)] = %...
-    
-    NEES(k) = %...
+    [NIS(k), NISes(:, k)] = imm.NIS(Z(:, k), probbar(:, k),xbar(:, :, k), Pbar(:,:,:,k));
+
+    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = ...
+        imm.update(Z(:, k), probbar(:, k), xbar(:, :, k), Pbar(: ,:, :, k));
+
+    [xest(:, k), Pest(:, :, k)] = imm.estimate(probhat(:, k), xhat(: ,:, k), Phat(:, :, :, k)) ;
+    NEES(k) = (xest(1:4, k) - Xgt(1:4, k))' * (Pest(1:4, 1:4, k) \ (xest(1:4, k) - Xgt(1:4, k)));    
     if k < 100
-        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = %...
+        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] =...
+            imm.predict(probhat(:, k), xhat(:, :, k), Phat(:, :, :, k), Ts);
     end
 end
 
 % errors
 poserr = sqrt(sum((xest(1:2,:) - Xgt(1:2,:)).^2, 1));
-posRMSE = %... % not true RMSE (which is over monte carlo simulations)
+posRMSE = sqrt(mean(poserr.^2));  % not true RMSE (which is over monte carlo simulations)
 velerr = sqrt(sum((xest(3:4, :) - Xgt(3:4, :)).^2, 1));
-velRMSE = %... % not true RMSE (which is over monte carlo simulations)
-% peakPosDeviation = 
-% peakVelDeviation = 
+velRMSE = sqrt(mean(velerr.^2)); % not true RMSE (which is over monte carlo simulations)
+
+peakPosDeviation = max(poserr) ;
+peakVelDeviation = max(velerr) ;
 
 % consistency
-confidenceIntervalNIS = % ... 
+confidenceIntervalNIS = chi2inv([0.025 , 0.975], K * 2) / K;
 ANIS = mean(NIS)
-confidenceIntervalNEES = % ... 
+confidenceIntervalNEES = chi2inv([0.025 , 0.975], K * 4) / K;
 ANEES = mean(NEES)
 
 % plot
@@ -260,5 +284,3 @@ ciNEES = chi2inv([0.05, 0.95], 4);
 inCI = sum((NIS >= ciNEES(1)) .* (NIS <= ciNEES(2)))/K;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
-
-%}
