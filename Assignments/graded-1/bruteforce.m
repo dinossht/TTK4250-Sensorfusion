@@ -23,10 +23,16 @@ end
 
 % parameters for the parameter grid
 Nvals = 10;
-qlow = 0.05;
-qhigh = 10;
-rlow = 0.1;
-rhigh = 10;
+
+qlow = 0.01;
+qhigh = 0.1;
+rlow = 2.5;
+rhigh = 7.5;
+
+%qlow = 0.01;
+%qhigh = 0.09;
+%rlow = 1;
+%rhigh = 9;
 
 % set the grid on logscale (not mandatory)
 qs = logspace(log10(qlow), log10(qhigh), Nvals);
@@ -69,14 +75,21 @@ NEESvel = zeros(Nvals, Nvals, K);
 xbar(:, :, 1) = repmat(x0, [1, 2]);
 Pbar(:, : ,:, 1) = repmat(P0,[1,1,2]);
 probbar(:, 1) = sprobs0;
+
+% error init
+posRMSE = zeros(Nvals,Nvals);
+velRMSE = zeros(Nvals,Nvals); 
+peakPosDeviation = zeros(Nvals,Nvals);
+peakVelDeviation = zeros(Nvals,Nvals); 
+
 tic;
 for qi = 1:Nvals
     display(qi/Nvals);
     for ri = 1:Nvals
         % make model
         models =  cell(2,1);
-        models{1} = EKF(discreteCVmodel(qi, ri));
-        models{2} = EKF(discreteCTmodel(qCT, ri));
+        models{1} = EKF(discreteCVmodel(qs(qi), rs(ri)));
+        models{2} = EKF(discreteCTmodel(qCT, rs(ri)));
         imm = IMM(models, PI);
         tracker = IMMPDAF(imm, lambda, PD, gateSize);
         
@@ -98,6 +111,14 @@ for qi = 1:Nvals
             end
         end
         
+        %% Calculate RMSE
+        poserr = sqrt(sum((xest(1:2,:) - Xgt(1:2,:)).^2, 1));
+        posRMSE(qi,ri) = sqrt(mean(poserr.^2)); % not true RMSE (which is over monte carlo simulations)
+        velerr = sqrt(sum((xest(3:4, :) - Xgt(3:4, :)).^2, 1));
+        velRMSE(qi,ri) = sqrt(mean(velerr.^2)); % not true RMSE (which is over monte carlo simulations)
+        peakPosDeviation(qi,ri) = max(poserr);
+        peakVelDeviation(qi,ri) = max(velerr);        
+        
     end
 end
 toc;
@@ -115,7 +136,8 @@ disp(CINEES);
 % plot
 [qq ,rr] = meshgrid(qs, rs); % creates the needed grid for plotting
 figure(4); clf; grid on;
-surfc (qs , rs , ANEES' ) ; hold on ; % note transpose
+surf(qs , rs , ANEES' ) ; hold on ; % note transpose
+
 
 caxis([0, 10])
 [C, H] = contour3( qs , rs , ANEES' , CINEES ) ; % note transpose
@@ -131,3 +153,17 @@ xlabel('q')
 ylabel('r')
 zlabel('ANIS')
 zlim([0, 10])
+
+%%
+figure(4); clf; grid on;
+
+%qs_l = linspace((qlow), (qhigh), Nvals);
+%rs_l = linspace((rlow), (rhigh), Nvals);
+
+surf(qs, rs, posRMSE' ) ; hold on ; % note transpose
+
+
+xlabel('q')
+ylabel('r')
+zlabel('POS_RMSE')
+%zlim([0, 10])
