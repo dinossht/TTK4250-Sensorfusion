@@ -113,7 +113,7 @@ chi2inv([0.025, 0.975], K*2)/K
 ANEESpos = mean(NEESpos)
 ANEESvel = mean(NEESvel)
 
-chi2inv([0.025, 0.975], K*4)/K
+chi2inv([0.025, 0.975], K*4)/K  %% 4*k = antall frihetsgrader
 ANEES = mean(NEES)
 
 % plot
