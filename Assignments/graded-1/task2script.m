@@ -17,7 +17,7 @@ else
     lambdatrue = 1e-4;
     [Xgt, Z, a] = simulate_atc_track(Ts, K, q, r, init, PDtrue, lambdatrue, false);
 end
-
+%%
 
 % plot measurements close to the trajectory
 figure(1); clf; hold on; grid on;
@@ -38,7 +38,6 @@ plot(Xgt(1,:),Xgt(2,:), 'LineWidth',1.5);
 title('True trajectory and the nearby measurements')
 %%
 % play measurement movie. Remember that you can click the stop button.
-%{
 figure(2); clf; grid on;
 set(gcf,'Visible','on')
 plotpause = 0.1; % sets a pause in between time steps if it goes to fast
@@ -54,12 +53,12 @@ for k = 1:K
     drawnow;
     pause(plotpause);
 end
-%}
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART I %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Look at individual EKF-PDAs
-r = 6; 
+r = 5; 
 qCV = 0.05;                % acceleration covariance                      
 qCT = [0.05 , 0.000025];   % acceleration, turn rate covariance   
 
@@ -94,7 +93,7 @@ Pbar(:, : ,1) = diag([25, 25, 3, 3, 0.0005].^2);
 % filter
 for k = 1:K
     [xhat(:, k) , Phat(:, :, k)] = tracker{s}.update(Z{k}, xbar(:, k), Pbar(:,: ,k));
-    NEES(k) = ((xhat(:, k) - Xgt(:, k))' / squeeze(Phat(:, :, k))) * (xhat(:, k) - Xgt(:, k));
+    NEES(k) = ((xhat(1:3+s, k) - Xgt(1:3+s, k))' / squeeze(Phat(1:3+s, 1:3+s, k))) * (xhat(1:3+s, k) - Xgt(1:3+s, k));
     NEESpos(k) = ((xhat(1:2, k) - Xgt(1:2, k))' / squeeze(Phat(1:2, 1:2, k))) * (xhat(1:2, k) - Xgt(1:2, k));
     NEESvel(k) = ((xhat(3:4, k) - Xgt(3:4, k))' / squeeze(Phat(3:4, 3:4, k))) * (xhat(3:4 ,k) - Xgt(3:4 ,k));
     if k < K
