@@ -160,9 +160,9 @@ text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % IMM-PDA
 
 % sensor 
-r = 5;
-lambda = 1e-3;
-PD = 0.8;
+r = 6;
+lambda = 0.0000982474;
+PD = 0.95;
 gateSize = 5^2;
 
 % dynamic models
