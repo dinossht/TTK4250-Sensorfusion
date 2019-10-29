@@ -68,17 +68,20 @@ classdef ESKF
             R = quat2rotmat(quat);
             
             % predictions
-            posPred = % 
-            velPred = %
+            posPred = pos + Ts*vel + (Ts^2/2)*R*acc; 
+            velPred = vel + Ts*R*acc;
             
-            dq = %
-            quatPred = %
+            % local rotation vector increment
+            k = Ts * omega;
+            dq = [cos(norm(k,2)/2) sin(norm(k,2)/2)*k'/norm(k,2)]';
+            quatPred = quatProd(quat,dq);
             
-            accBiasPred = % 
-            gyroBiasPred = %
+            I = eye(3);
+            accBiasPred = accBias - accBias*obj.pAcc*I*Ts;
+            gyroBiasPred = gyroBias - gyroBias*obj.pGyro*I*Ts; 
             
             % make sure quaternion is normalized
-            quatPred = % 
+            quatPred = quatPred / norm(quatPred,2);
             
             % concatenate into the predicted nominal state
             xnompred = [posPred;
