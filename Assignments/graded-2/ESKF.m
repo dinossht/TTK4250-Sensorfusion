@@ -155,7 +155,7 @@ classdef ESKF
             G = obj.Gerr(xnom);
             
             % use Van Loan
-            V = [-A G*obj.Qerr*G';eye(15) A']*Ts; % the matrix exponent in Van Loan
+            V = [-A G*obj.Qerr*G';zeros(15) A']*Ts; % the matrix exponent in Van Loan
             VanLoanMat = expm(V); % can potentially be slow
              
             % exctract relevant matrices.
