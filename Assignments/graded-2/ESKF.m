@@ -109,9 +109,9 @@ classdef ESKF
             I = eye(3);
             % instert the different terms
             A(1:3, 4:6) = I;                % vel to pos
-            A(4:6, 7:9) = -R*quatProd(acc); % attitude to vel
+            A(4:6, 7:9) = -R*crossProdMat(acc); % attitude to vel
             A(4:6, 10:12) = -R;             % acc bias to vel
-            A(7:9, 7:9) = -quatProd(omega); % attitude to attitude
+            A(7:9, 7:9) = -crossProdMat(omega); % attitude to attitude
             A(7:9, 13:15) = -I;             % gyro bias to attitude
             A(10:12, 10:12) = -obj.pAcc*I;  % acc bias to acc bias
             A(13:15, 13:15) = -obj.pGyro*I; % gyro bias to gyro bias
