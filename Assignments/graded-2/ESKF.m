@@ -155,12 +155,13 @@ classdef ESKF
             G = obj.Gerr(xnom);
             
             % use Van Loan
-            V = %; % the matrix exponent in Van Loan
+            V = [-A G*obj.Qerr*G';eye(15) A']*Ts; % the matrix exponent in Van Loan
             VanLoanMat = expm(V); % can potentially be slow
              
-            % exctract relevat matrices.
-            Ad = VanLoanMat(..., ...);
-            GQGd = ... * VanLoanMat(..., ...);    
+            % exctract relevant matrices.
+            Ad = VanLoanMat(16:30,16:30)';
+                
+            GQGd = Ad * VanLoanMat(1:15,16:30);    
         end
         
         function Ppred = predictCovariance(obj, xnom, P, acc, omega, Ts)
