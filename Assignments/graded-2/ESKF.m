@@ -221,14 +221,17 @@ classdef ESKF
             % Pinjected (15 x 15): error state covariance after injection
             
             % Inject error state into nominal state (quaternions cannot be added)
-            xinjected = ...;
+            xinjected = [xnom(1:6) + deltaX(1:6);
+                        quatProd(xnom(7:10),[1;0.5*deltaX(7:9)]);
+                        xnom(11:16) + deltaX(10:15)];
             
             % make sure quaterion is normalized
-            ...;
+            xinjected(7:10) = xinjected(7:10)/(norm(xinjected(7:10),2));
                 
             % compensate for injection in the covariance
-            Ginject = ...;
-            Pinjected = ...;
+            Ginject = eye(15);
+            Ginject(7:9,7:9) = Ginject(7:9,7:9)-crossProdMat(0.5*deltaX(7:9));
+            Pinjected = Ginject*P*Ginject';
         end
         
         function [v, S] = innovationGNSS(~, xnom, P, zGNSSpos, RGNSS, leverarm)
