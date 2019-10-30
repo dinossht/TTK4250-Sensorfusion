@@ -179,7 +179,7 @@ classdef ESKF
             [Ad, GQGd] = obj.discreteErrMats(xnom, acc, omega, Ts);
             
             % KF covariance predict
-            Ppred = %
+            Ppred = Ad*P*Ad' + GQGd;%
         end
         
         function [xnompred, Ppred] = predict(obj, xnom, P, zAcc, zGyro, Ts)
@@ -203,12 +203,12 @@ classdef ESKF
             gyroBias = obj.Sg * xnom(14:16);
 
             % debias measurements
-            acc = ...; % expected value of accelleration in body given IMU measurements
-            omega = ...; % expected value of rotation rate in body given IMU measurements
+            acc = zAcc-accBias; % expected value of accelleration in body given IMU measurements
+            omega = zGyro - gyroBias; % expected value of rotation rate in body given IMU measurements
             
             % perform prediction using the above functions
-            xnompred = ...;
-            Ppred = ...;
+            xnompred = predictNominal(xnom, acc, omega, Ts);
+            Ppred = predictCovariance(xnom, P, acc, omega, Ts);
         end
         
         function [xinjected, Pinjected] = inject(~, xnom, deltaX, P)
