@@ -187,16 +187,16 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % IMM-PDA
 
 % sensor 
-r = 6;
-PD = 0.95;
-lambda = 0.0000982474;
+r = 10^2;
+PD = 0.9;
+lambda = 1e-12;%0.0000982474;
 gateSize = 5^2;
 
 % dynamic models
-qCV = 0.05
-qCT = [0.05 0.0025];
-qCVh = 0.3;
-modIdx = 1:2;%1:3; 
+qCV = 10
+qCT = [0.01 0.00025];
+qCVh = 10;
+modIdx = 1:3;%1:3; 
 M = numel(modIdx);
 
 x0 = [7100; 3630; 0; 0; 0]; % taken from gt
@@ -205,11 +205,11 @@ P0 = diag([25, 25, 10, 10, pi/6].^2); % seems reasonable?
 % markov chain (other parameterizations can be simpler to tune)
 PI11 = 0.95;
 PI22 = 0.95;
-PI33 = 0.1;
+PI33 = 0.95;
 
 PI = [PI11, 0.025, 0.025;
     0.025, PI22, 0.025;
-    0.45, 0.45, PI33];
+     0.47950,  0.47950, PI33];
 
 PI = PI(modIdx, modIdx) % select the models to use
 PI = PI./sum(PI,1); % be sure to normalize
@@ -288,7 +288,7 @@ plot(Xgt(1,:), Xgt(2, :));
 scatter(Zmat(1,:), Zmat(2,:))
 axis('equal')
 title(sprintf('posRMSE = %.3f, velRMSE = %.3f, peakPosDev = %.3f, peakVelDev = %.3f',posRMSE, velRMSE, peakPosDeviation, peakVelDeviation))
-
+%{
 figure(7); clf; hold on; grid on;
 subplot(3,1,1);
 hold on; grid on;
@@ -305,12 +305,12 @@ hold on; grid on;
 plot(diff(unwrap(atan2(xest(4,:), xest(3,:))))./Ts')
 plot(diff(unwrap(atan2(Xgt(4,:), Xgt(3,:))))./Ts')
 ylabel('omega')
-
+%}
 figure(8); clf;
 plot(probhat');
 grid on;
 legend('CV','CT','CV-high');
-
+%{
 figure(9); clf;
 subplot(2,1,1); 
 plot(poserr); grid on;
