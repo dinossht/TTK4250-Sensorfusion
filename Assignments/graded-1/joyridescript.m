@@ -187,15 +187,15 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % IMM-PDA
 
 % sensor 
-r = %...
-PD = %...
-lambda = %...
-gateSize = %...
+r = 6;
+PD = 0.95;
+lambda = 0.0000982474;
+gateSize = 5^2;
 
 % dynamic models
-qCV = %...
-qCT = %...
-qCVh = %...
+qCV = 0.05
+qCT = [0.005 0.000025];
+qCVh = 0.3;
 modIdx = 1:3; 
 M = numel(modIdx);
 
@@ -203,19 +203,20 @@ x0 = [7100; 3630; 0; 0; 0]; % taken from gt
 P0 = diag([25, 25, 10, 10, pi/6].^2); % seems reasonable?
 
 % markov chain (other parameterizations can be simpler to tune)
-PI11 = %...
-PI22 = %...
-PI33 = %...
+PI11 = 0.95;
+PI22 = 0.95;
+PI33 = 0.95;
 
-PI = %[PI11, ..., ...;
-    %..., PI22, ...;
-    %..., ..., PI33];
+PI = [PI11, 0.025, 0.025;
+    0.025, PI22, 0.025;
+    0.025, 0.025, PI33];
 
 PI = PI(modIdx, modIdx) % select the models to use
 PI = PI./sum(PI,1); % be sure to normalize
 assert(all(sum(PI, 1) - 1 < eps),'columns of PI must sum to 1')
 
-sprobs0 = %... 
+
+sprobs0 = [1 1 1]';
 sprobs0 = sprobs0(modIdx)/sum(sprobs0(modIdx)) % select models and normalize
 assert(all(sprobs0 > 0), 'probabilities must be positive')
 
@@ -248,16 +249,21 @@ probbar(:, 1) = sprobs0;
 
 % filter
 for k=1:K
-    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = %...
-    [xest(:, k), Pest(:, :, k)] = %...
+    % Update
+    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = tracker.update(Z{k}, probbar(:, k), xbar(:, :, k), Pbar(:, :, :, k));
     
-    NEES(k) = %...
-    NEESpos(k) = %...
-    NEESvel(k) = %...  
+    % Total state mean and cov
+    [xest(:, k), Pest(:, :, k)] =  tracker.imm.estimate(probhat(: , k), xhat(:, :, k), Phat(:, :, :, k));
+    
+    NEES(k) = (xest(1:4, k) - Xgt(:, k))' * (Pest(1:4, 1:4, k) \ (xest(1:4, k) - Xgt(:, k)));
+    NEESpos(k) = (xest(1:2, k) - Xgt(1:2, k))' * (Pest(1:2, 1:2, k ) \ (xest(1:2, k) - Xgt(1:2, k)));
+    NEESvel(k) = (xest(3:4, k) - Xgt(3:4, k))' * (Pest(3:4, 3:4, k ) \ (xest(3:4, k) - Xgt(3:4, k)));
+ 
     if k < K
-        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = %...
+        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = ...
+            tracker.predict(probhat(:, k), xhat(:, :, k), Phat(:, :, :, k), Ts(k));
     end
-end
+end    
 
 % errors
 poserr = sqrt(sum((xest(1:2,:) - Xgt(1:2,:)).^2, 1));
@@ -303,6 +309,7 @@ ylabel('omega')
 figure(8); clf;
 plot(probhat');
 grid on;
+legend('CV','CT','CV-high');
 
 figure(9); clf;
 subplot(2,1,1); 
