@@ -194,9 +194,9 @@ gateSize = 5^2;
 
 % dynamic models
 qCV = 0.05
-qCT = [0.005 0.000025];
+qCT = [0.05 0.0025];
 qCVh = 0.3;
-modIdx = 1:3; 
+modIdx = 1:2;%1:3; 
 M = numel(modIdx);
 
 x0 = [7100; 3630; 0; 0; 0]; % taken from gt
@@ -205,11 +205,11 @@ P0 = diag([25, 25, 10, 10, pi/6].^2); % seems reasonable?
 % markov chain (other parameterizations can be simpler to tune)
 PI11 = 0.95;
 PI22 = 0.95;
-PI33 = 0.95;
+PI33 = 0.1;
 
 PI = [PI11, 0.025, 0.025;
     0.025, PI22, 0.025;
-    0.025, 0.025, PI33];
+    0.45, 0.45, PI33];
 
 PI = PI(modIdx, modIdx) % select the models to use
 PI = PI./sum(PI,1); % be sure to normalize
