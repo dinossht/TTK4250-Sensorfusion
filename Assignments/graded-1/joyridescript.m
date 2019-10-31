@@ -1,3 +1,5 @@
+clear;clc;close all;
+%%
 % load data
 load joyridedata.mat;
 
@@ -50,6 +52,7 @@ covEllSize = sqrt(eig(cov(v')))
 meanMinMeasDists = mean(d)
 meanNumberOfCloseMeasurements = mean(closecount)
 %%
+%{
 % play measurement movie. Remember that you can click the stop button.
 figure(2); clf; grid on;
 set(gcf,'Visible','on')
@@ -66,17 +69,19 @@ for k = 1:K
     drawnow;
     pause(plotpause);
 end
+%}
 %%
 % Look at individual EKF-PDAs
+%r CV  PD]
 
-r = %...
-qCV = %...
-qCT = %...
+r = 3;
+qCV = 0.05;
+qCT = [0.5 0.0000025];
 
 
-PD = %...
-lambda = %...
-gateSize = %...
+PD = 0.9;
+lambda = 0.0000982474;
+gateSize = 25^2;
 % choose model to tune
 s = 2;
 
@@ -104,12 +109,12 @@ Pbar(:, : ,1) = diag(4*[10; 10; 1; 1; pi/10].^2); % seems reasonable?
 
 % filter
 for k = 1:K
-    [xhat(:, k), Phat(:, :, k)] = % ... 
-    NEES(k) = %...
-    NEESpos(k) = %...
-    NEESvel(k) = %...
+    [xhat(:, k) , Phat(:, :, k)] = tracker{s}.update(Z{k}, xbar(:, k), Pbar(:,: ,k));
+    NEES(k) = ((xhat(1:4, k) - Xgt(1:4, k))' / squeeze(Phat(1:4, 1:4, k))) * (xhat(1:4, k) - Xgt(1:4, k));
+    NEESpos(k) = ((xhat(1:2, k) - Xgt(1:2, k))' / squeeze(Phat(1:2, 1:2, k))) * (xhat(1:2, k) - Xgt(1:2, k));
+    NEESvel(k) = ((xhat(3:4, k) - Xgt(3:4, k))' / squeeze(Phat(3:4, 3:4, k))) * (xhat(3:4 ,k) - Xgt(3:4 ,k));
     if k < K
-        [xbar(:, k+1), Pbar(:, :, k+1)] = %...
+        [xbar(:, k+1), Pbar(:, :, k+1)] = tracker{s}.predict(xhat(:, k), Phat(:, :, k), Ts(k));
     end
 end
 
@@ -126,10 +131,11 @@ ANEESvel = mean(NEESvel)
 %ANIS = mean(NISes)
 
 % plot
-figure(3); clf; hold on; grid on;
+figure(3);  clf; 
+hold on; grid on;
 plot(xhat(1,:), xhat(2,:));
 plot(Xgt(1, :), Xgt(2, :))
-%scatter(Zmat(1,:), Zmat(2, :), 'x');
+scatter(Zmat(1,:), Zmat(2, :), 'x');
 axis('equal')
 %scatter(Z(1,:), Z(2, :));
 title(sprintf('posRMSE = %.3f, velRMSE = %.3f',posRMSE, velRMSE))
@@ -175,6 +181,8 @@ ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+
+
 %%
 % IMM-PDA
 
@@ -396,3 +404,4 @@ for k = plotRange
     drawnow;
     pause(plotpause)
 end
+%}
