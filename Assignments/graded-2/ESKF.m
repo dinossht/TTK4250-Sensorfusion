@@ -179,7 +179,7 @@ classdef ESKF
             [Ad, GQGd] = obj.discreteErrMats(xnom, acc, omega, Ts);
             
             % KF covariance predict
-            Ppred = Ad*P*Ad' + GQGd;%
+            Ppred = Ad*P*Ad' + GQGd;
         end
         
         function [xnompred, Ppred] = predict(obj, xnom, P, zAcc, zGyro, Ts)
@@ -203,12 +203,12 @@ classdef ESKF
             gyroBias = obj.Sg * xnom(14:16);
 
             % debias measurements
-            acc = zAcc-accBias; % expected value of accelleration in body given IMU measurements
+            acc = zAcc - accBias; % expected value of accelleration in body given IMU measurements
             omega = zGyro - gyroBias; % expected value of rotation rate in body given IMU measurements
             
             % perform prediction using the above functions
-            xnompred = predictNominal(xnom, acc, omega, Ts);
-            Ppred = predictCovariance(xnom, P, acc, omega, Ts);
+            xnompred = obj.predictNominal(xnom, acc, omega, Ts);
+            Ppred = obj.predictCovariance(xnom, P, acc, omega, Ts);
         end
         
         function [xinjected, Pinjected] = inject(~, xnom, deltaX, P)
@@ -220,13 +220,14 @@ classdef ESKF
             % xinjected (16 x 1): nominal state after injection
             % Pinjected (15 x 15): error state covariance after injection
             
-            % Inject error state into nominal state (quaternions cannot be added)
+            % Inject error state into nominal state (quaternions cannot be
+            % added) (eq:10.72)
             xinjected = [xnom(1:6) + deltaX(1:6);
                         quatProd(xnom(7:10),[1;0.5*deltaX(7:9)]);
                         xnom(11:16) + deltaX(10:15)];
             
             % make sure quaterion is normalized
-            xinjected(7:10) = xinjected(7:10)/(norm(xinjected(7:10),2));
+            xinjected(7:10) = xinjected(7:10)/norm(xinjected(7:10),2);
                 
             % compensate for injection in the covariance
             Ginject = eye(15);
