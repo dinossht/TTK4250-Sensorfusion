@@ -14,7 +14,7 @@ qAb = 10^2; % accelerometer bias driving noise covariance
 pAcc = 0; % accelerometer bias reciprocal time constant
 
 qG = 0.5e-3^2; % gyro measurement noise covariance
-qGb = 0.1/3600;%^2;  % gyro bias driving noise covariance
+qGb = 1.5/3600;%^2;  % gyro bias driving noise covariance
 pGyro = 0; % gyrp bias reciprocal time constant
 
 
@@ -78,9 +78,9 @@ for k = 1:N
         end
     end
 end
+GNSSk = GNSSk - 1;
 
 %% plots
-GNSSk = GNSSk - 1;
 figure(1);
 clf;
 plot3(xest(2, 1:N), xest(1, 1:N), -xest(3, 1:N));
