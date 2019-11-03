@@ -355,12 +355,12 @@ classdef ESKF
             
             deltaX = obj.deltaX(xnom, xtrue);
             
-            NEES = ...;
-            NEESpos = ...;
-            NEESvel = ...;
-            NEESatt = ...;
-            NEESaccbias = ...;
-            NEESgyrobias = ...;
+            NEES = deltaX'*inv(P)*deltaX;
+            NEESpos = deltaX(1:3)'*inv(P(1:3,1:3))*deltaX(1:3);
+            NEESvel = deltaX(4:6)'*inv(P(4:6,4:6))*deltaX(4:6);
+            NEESatt = deltaX(7:9)'*inv(P(7:9,7:9))*deltaX(7:9);
+            NEESaccbias = deltaX(10:12)'*inv(P(10:12,10:12))*deltaX(10:12);
+            NEESgyrobias = deltaX(13:15)'*inv(P(13:15,13:15))*deltaX(13:15);
         end
     end
 end
