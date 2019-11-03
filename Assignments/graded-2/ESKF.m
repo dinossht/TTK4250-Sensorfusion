@@ -158,7 +158,7 @@ classdef ESKF
             % exctract relevant matrices.
             Ad = VanLoanMat(16:30,16:30)';
                 
-            GQGd = Ad * VanLoanMat(1:15,16:30);    
+            GQGd = Ad * VanLoanMat(1:15,16:30); % (eq:4.63)   
         end
         
         function Ppred = predictCovariance(obj, xnom, P, acc, omega, Ts)
