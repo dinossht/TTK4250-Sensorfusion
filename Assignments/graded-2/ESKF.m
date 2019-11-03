@@ -330,15 +330,15 @@ classdef ESKF
             %                   addition)
            
            % pos and vel
-           deltaPos = ...;
-           deltaVel = ...;
+           deltaPos = xtrue(1:3) - xnom(1:3);
+           deltaVel = xtrue(4:6) - xnom(4:6);
            
             % attitude (just some suggested steps, you are free to change)
-           qConj = ...; % conjugated nominal quaternion
-           deltaQuat = ...; % the error quaternion
-           deltaTheta = ...; % the error state
+           qConj = [-xnom(7),xnom(8:10)]'; % conjugated nominal quaternion
+           deltaQuat = quatProd(qConj,xtrue(7:10)); % the error quaternion
+           deltaTheta = 0.5*deltaQuat(2:4); % the error state (eq:10.72)
            
-           deltaBias = ...;
+           deltaBias = xtrue(11:16) - xnom(11:16);
            
            deltaX = [deltaPos; deltaVel; deltaTheta; deltaBias];
         end
