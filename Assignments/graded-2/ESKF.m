@@ -132,10 +132,7 @@ classdef ESKF
             Rot = quat2rotmat(xnom(7:10));
             
             % create the input matrix
-            I = eye(3);
-            G = zeros(15,12);
-            G(4:6,1:3) = -Rot;
-            G(7:15,7:12) = blkdiag([-I,I,I]);
+            G = [zeros(3,12); blkdiag(-Rot,-eye(3),eye(6))];
         end
         
         function [Ad, GQGd] = discreteErrMats(obj, xnom, acc, omega, Ts)
