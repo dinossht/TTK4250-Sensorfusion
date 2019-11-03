@@ -5,17 +5,17 @@ steps = size(zAcc,2);
 
 %% Measurement noise
 % GNSS Position  measurement
-p_std = [..., ..., ...]'; % Measurement noise
+p_std = [0.5, 0.5, 0.5]'; % Measurement noise
 RGNSS = diag(p_std.^2);
 
 % accelerometer
-qA = ...^2; % accelerometer measurement noise covariance
-qAb = ...^2; % accelerometer bias driving noise covariance
-pAcc = ...; % accelerometer bias reciprocal time constant
+qA = 0.01^2; % accelerometer measurement noise covariance
+qAb = 10^2; % accelerometer bias driving noise covariance
+pAcc = 0; % accelerometer bias reciprocal time constant
 
-qG = ...^2; % gyro measurement noise covariance
-qGb = ...^2;  % gyro bias driving noise covariance
-pGyro = ...; % gyrp bias reciprocal time constant
+qG = 0.5e-3^2; % gyro measurement noise covariance
+qGb = 0.1/3600;%^2;  % gyro bias driving noise covariance
+pGyro = 0; % gyrp bias reciprocal time constant
 
 
 %% Estimator
@@ -35,19 +35,22 @@ xpred(1:3, 1) = [0, 0, -5]'; % starting 5 meters above ground
 xpred(4:6, 1) = [20, 0, 0]'; % starting at 20 m/s due north
 xpred(7, 1) = 1; % no initial rotation: nose to north, right to East and belly down.
 
-Ppred(1:3, 1:3, 1) = ...; 
-Ppred(4:6, 4:6, 1) = ...;
-Ppred(7:9, 7:9, 1) = ...; % error rotation vector (not quat)
-Ppred(10:12, 10:12, 1) = ...;
-Ppred(13:15, 13:15, 1) = ...;
+Ppred(1:3, 1:3, 1) = eye(3); 
+Ppred(4:6, 4:6, 1) = eye(3);
+Ppred(7:9, 7:9, 1) = eye(3); % error rotation vector (not quat)
+Ppred(10:12, 10:12, 1) = eye(3);
+Ppred(13:15, 13:15, 1) = eye(3);
 
 %% run
 N = 90000;
 GNSSk = 1;
 for k = 1:N
+    display(k);
     if  timeIMU(k) >= timeGNSS(GNSSk)
-        NIS(GNSSk) = ...;
-        [xest(:, k), Pest(:, :, k)] = ...;
+        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);%, leverarm);
+        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
+
+            
         GNSSk = GNSSk  + 1;
         
         % sanity check, remove for some minor speed
@@ -56,16 +59,19 @@ for k = 1:N
         end
         
     else % no updates so estimate = prediction
-        xest(:, k) = ... ;
-        Pest(:, :, k) = ... ;
+        xest(:, k) = xpred(:, k);
+        Pest(:, :, k) = Ppred(:, :, k);    
     end
     
-    deltaX(:, k) = ...;
+    deltaX(:, k) = eskf.deltaX(xpred(:,k), xtrue(:,k));
     [NEES(:, k), NEESpos(:, k), NEESvel(:, k), NEESatt(:, k), NEESaccbias(:, k), NEESgyrobias(:, k)] = ...
-        ...;
+        eskf.NEES(xpred(:,k), Ppred(:,:,k), xtrue(:,k));
     
     if k < N
-        [xpred(:, k+1),  Ppred(:, :, k+1)] = ...;
+% Note that an IMU is causal and that it measures the acceleration over the last time step in some
+% manner, and not the acceleration/rotation into the future. This means that it makes sense to use the
+% measurements at a time step k to predict the state from k − 1 to k and not from k to k + 1.
+        [xpred(:, k+1),  Ppred(:, :, k+1)] = eskf.predict(xest(:, k), Pest(:, :, k), zAcc(:,k+1), zGyro(:,k+1), dt);
         % sanity check, remove for speed
         if any(any(~isfinite(Ppred(:, :, k + 1))))
            error('not finite Ppred at time %d', k + 1)
@@ -74,6 +80,7 @@ for k = 1:N
 end
 
 %% plots
+GNSSk = GNSSk - 1;
 figure(1);
 clf;
 plot3(xest(2, 1:N), xest(1, 1:N), -xest(3, 1:N));
@@ -120,7 +127,8 @@ grid on;
 ylabel('Gyro bias [deg/h]')
 legend('x', 'y', 'z')
 
-suptitle('States estimates');
+%suptitle('States estimates');
+sgtitle('States estimates');
 
 % state error plots
 figure(3); clf; hold on;
@@ -165,7 +173,8 @@ legend(sprintf('x (%.3g)', sqrt(mean(((deltaX(13, 1:N))*180/pi).^2))),...
     sprintf('y (%.3g)', sqrt(mean(((deltaX(14, 1:N))*180/pi).^2))),...
     sprintf('z (%.3g)', sqrt(mean(((deltaX(15, 1:N))*180/pi).^2))))
 
-suptitle('States estimate errors');
+%suptitle('States estimate errors');
+sgtitle('States estimate errors');
 
 % error distance plot
 figure(4); clf; hold on;
