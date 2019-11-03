@@ -244,10 +244,12 @@ classdef ESKF
             % 
             % v (3 x 1): innovation
             % S (3 x 3): innovation covariance
-            H = [eye(3), zeros(3,12)]; % (eq:10.80) 
+            
+            Hx = [eye(3) zeros(3, 13)]; % (eq:10.80)
+            H = [eye(3), zeros(3,12)];  
             
             % innovation calculation
-            v = zGNSSpos - H*xnom; % innovation
+            v = zGNSSpos - Hx*xnom; % innovation
             
             % in case of a specified lever arm
             if nargin > 5
@@ -281,7 +283,7 @@ classdef ESKF
             
             [innov, S] = obj.innovationGNSS(xnom, P, zGNSSpos, RGNSS, leverarm);
             % measurement matrix
-            H = [eye(3), zeros(3,12)]; % (eq:10.80) 
+            H = [eye(3), zeros(3,12)]; 
             
             % in case of a specified lever arm
             if nargin > 5
@@ -331,9 +333,9 @@ classdef ESKF
            deltaVel = xtrue(4:6) - xnom(4:6);
            
             % attitude (just some suggested steps, you are free to change)
-           qConj = [-xnom(7),xnom(8:10)]'; % conjugated nominal quaternion
+           qConj = [xnom(7), -xnom(8:10)]'; % conjugated nominal quaternion
            deltaQuat = quatProd(qConj,xtrue(7:10)); % the error quaternion
-           deltaTheta = 0.5*deltaQuat(2:4); % the error state (eq:10.72)
+           deltaTheta = 2*deltaQuat(2:4); % the error state (eq:10.72)
            
            deltaBias = xtrue(11:16) - xnom(11:16);
            
