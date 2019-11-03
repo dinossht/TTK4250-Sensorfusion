@@ -247,8 +247,7 @@ classdef ESKF
             % 
             % v (3 x 1): innovation
             % S (3 x 3): innovation covariance
-            
-            H = [eye(3), zeros(3,13)]; % (eq:10.80) 
+            H = [eye(3), zeros(3,12)]; % (eq:10.80) 
             
             % innovation calculation
             v = zGNSSpos - H*xnom; % innovation
@@ -258,20 +257,9 @@ classdef ESKF
                 R = quat2rotmat(xnom(7:10));
                 H(:, 7:9) = -R * crossProdMat(leverarm);
                 v = v - R * leverarm;
-            end
+            end 
             
-            % (eq:10.78)
-            q = xnom(7:10);
-            Q_delta = 0.5*[...
-                -q(2) -q(3) -q(4);
-                 q(1) -q(4)  q(3);
-                 q(4)  q(1) -q(2);
-                -q(3)  q(2)  q(1);];  
-            % (eq:10.77)
-            X = zeros(16,15);
-            X(7:10,7:9) = Q_delta;  
-            
-            S = (H*X)*P*(H*X)' + RGNSS; % Innovation covariance
+            S = H*P*H' + RGNSS; % Innovation covariance
         end
         
         function [xinjected, Pinjected] = updateGNSS(obj, xnom, P, zGNSSpos, RGNSS, leverarm)
@@ -296,7 +284,7 @@ classdef ESKF
             
             [innov, S] = obj.innovationGNSS(xnom, P, zGNSSpos, RGNSS, leverarm);
             % measurement matrix
-            H = ;%[diag([eye(6),Q,eye(6)]); 
+            H = [eye(3), zeros(3,12)]; % (eq:10.80) 
             
             % in case of a specified lever arm
             if nargin > 5
@@ -305,8 +293,8 @@ classdef ESKF
             end
             
             % KF error state update (eq: 10.75)
-            W = P*H'*inv(H*P*H'+R); % Kalman gain
-            deltaX = W*(zGNSSpos-innov); %innovation????????????? h(x)+H*
+            W = P*H'*inv(S); % Kalman gain
+            deltaX = W*innov;
             Pupd = (I-W*H)*P; 
             
             % error state injection
