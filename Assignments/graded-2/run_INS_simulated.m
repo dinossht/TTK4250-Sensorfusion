@@ -1,3 +1,4 @@
+clear; clc; close all;
 load task_simulation.mat;
 dt = mean(diff(timeIMU));
 steps = size(zAcc,2);

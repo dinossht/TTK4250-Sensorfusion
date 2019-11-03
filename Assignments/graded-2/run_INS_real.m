@@ -1,3 +1,4 @@
+clear; clc; close all;
 load task_real;
 IMUTs = diff(timeIMU);
 dt = mean(IMUTs);
