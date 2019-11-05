@@ -19,7 +19,7 @@ else
 end
 %%
 off = 0;
-K = 30;
+K = 25;
 
 
 % plot measurements close to the trajectory
