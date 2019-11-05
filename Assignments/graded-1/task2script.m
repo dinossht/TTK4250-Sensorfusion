@@ -18,23 +18,26 @@ else
     [Xgt, Z, a] = simulate_atc_track(Ts, K, q, r, init, PDtrue, lambdatrue, false);
 end
 %%
+off = 0;
+K = 30;
+
 
 % plot measurements close to the trajectory
 figure(1); clf; hold on; grid on;
 Zplotdata = [];
 plotMeasDist = 45;
 for k = 1:K
-   toPlot = false(size(Z{k},2),1);
-   for j = 1:size(Z{k}, 2)
-        v = Z{k}(:, j) - Xgt(1:2, k);
+   toPlot = false(size(Z{off+k},2),1);
+   for j = 1:size(Z{off+k}, 2)
+        v = Z{off+k}(:, j) - Xgt(1:2, off+k);
         toPlot(j) = v' * v <= plotMeasDist^2;
    end
-   Zplotdata = [Zplotdata, Z{k}(:, toPlot)];
+   Zplotdata = [Zplotdata, Z{off+k}(:, toPlot)];
 end
 set(gca, 'ColorOrderIndex', 2)
 scatter(Zplotdata(1,:), Zplotdata(2,:));
 set(gca, 'ColorOrderIndex', 1)
-plot(Xgt(1,:),Xgt(2,:), 'LineWidth',1.5);
+plot(Xgt(1,1+off:K+off),Xgt(2,1+off:K+off), 'LineWidth',1.5);
 title('True trajectory and the nearby measurements')
 %%
 %{
@@ -67,7 +70,7 @@ lambda = 1e-3;
 PD = 0.8;
 gateSize = 5^2;
 % choose model to tune
-s = 2;
+s = 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make models
 models =  cell(2,1);
@@ -88,24 +91,24 @@ NEESpos = zeros(K, 1);
 NEESvel = zeros(K, 1);
 
 % initialize filter
-xbar(:, 1) = [0; 0; 2; 0; 0];
+xbar(:, 1) = Xgt(:,off+1);
 Pbar(:, : ,1) = diag([25, 25, 3, 3, 0.0005].^2);
 
 % filter
 for k = 1:K
-    [xhat(:, k) , Phat(:, :, k)] = tracker{s}.update(Z{k}, xbar(:, k), Pbar(:,: ,k));
-    NEES(k) = ((xhat(1:3+s, k) - Xgt(1:3+s, k))' / squeeze(Phat(1:3+s, 1:3+s, k))) * (xhat(1:3+s, k) - Xgt(1:3+s, k));
-    NEESpos(k) = ((xhat(1:2, k) - Xgt(1:2, k))' / squeeze(Phat(1:2, 1:2, k))) * (xhat(1:2, k) - Xgt(1:2, k));
-    NEESvel(k) = ((xhat(3:4, k) - Xgt(3:4, k))' / squeeze(Phat(3:4, 3:4, k))) * (xhat(3:4 ,k) - Xgt(3:4 ,k));
+    [xhat(:, k) , Phat(:, :, k)] = tracker{s}.update(Z{off+k}, xbar(:, k), Pbar(:,: ,k));
+    NEES(k) = ((xhat(1:3+s, k) - Xgt(1:3+s, off+k))' / squeeze(Phat(1:3+s, 1:3+s, k))) * (xhat(1:3+s, k) - Xgt(1:3+s, off+k));
+    NEESpos(k) = ((xhat(1:2, k) - Xgt(1:2, off+k))' / squeeze(Phat(1:2, 1:2, k))) * (xhat(1:2, k) - Xgt(1:2, off+k));
+    NEESvel(k) = ((xhat(3:4, k) - Xgt(3:4, off+k))' / squeeze(Phat(3:4, 3:4, k))) * (xhat(3:4 ,k) - Xgt(3:4 ,off+k));
     if k < K
         [xbar(:, k+1), Pbar(:, :, k+1)] = tracker{s}.predict(xhat(:, k), Phat(:, :, k), Ts);
     end
 end
 
 % errors
-poserr = sqrt(sum((xhat(1:2,:) - Xgt(1:2,:)).^2, 1));
+poserr = sqrt(sum((xhat(1:2,:) - Xgt(1:2,off+1:off+K)).^2, 1));
 posRMSE = sqrt(mean(poserr.^2));
-velerr = sqrt(sum((xhat(3:4, :) - Xgt(3:4, :)).^2, 1));
+velerr = sqrt(sum((xhat(3:4, :) - Xgt(3:4, off+1:off+K)).^2, 1));
 velRMSE = sqrt(mean(velerr.^2));
 
 % consistency
@@ -126,8 +129,11 @@ title(sprintf('posRMSE = %.3f, velRMSE = %.3f',posRMSE, velRMSE))
 
 figure(4); clf; hold on; grid on;
 plot(xhat(5,:))
-plot(Xgt(5,:))
-ylabel('omega')
+plot(Xgt(5,off+1:off+K))
+legend('est','true');
+ylabel('omega') 
+
+
 
 figure(5); clf;
 subplot(3,1,1);
@@ -154,6 +160,7 @@ inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 
+%{
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART II %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,26 +213,26 @@ Pbar(:, : ,:, 1) = repmat(P0,[1,1,2]);
 probbar(:, 1) = sprobs0;
 
 % filter
-for k=1:100
+for k=1+offset:K+offset
     % Update
-    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = tracker.update(Z{k}, probbar(:, k), xbar(:, :, k), Pbar(:, :, :, k));
+    [probhat(:, offset+k), xhat(:, :, offset+k), Phat(:, :, :, offset+k)] = tracker.update(Z{offset+k}, probbar(:, offset+k), xbar(:, :, offset+k), Pbar(:, :, :, offset+k));
     
     % Total state mean and cov
-    [xest(:, k), Pest(:, :, k)] =  tracker.imm.estimate(probhat(: , k), xhat(:, :, k), Phat(:, :, :, k));
+    [xest(:, offset+k), Pest(:, :, offset+k)] =  tracker.imm.estimate(probhat(: , offset+k), xhat(:, :, offset+k), Phat(:, :, :, offset+k));
     
-    NEES(k) = (xest(:, k) - Xgt(:, k))' * (Pest(:, :, k) \ (xest(:, k) - Xgt(:, k)));
-    NEESpos(k) = (xest(1:2, k) - Xgt(1:2, k))' * (Pest(1:2, 1:2, k ) \ (xest(1:2, k) - Xgt(1:2, k)));
-    NEESvel(k) = (xest(3:4, k) - Xgt(3:4, k))' * (Pest(3:4, 3:4, k ) \ (xest(3:4, k) - Xgt(3:4, k)));
-    if k < 100
-        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = ...
-            tracker.predict(probhat(:, k), xhat(:, :, k), Phat(:, :, :, k), Ts);
+    NEES(offset+k) = (xest(:, offset+k) - Xgt(:, offset+k))' * (Pest(:, :, offset+k) \ (xest(:, offset+k) - Xgt(:, offset+k)));
+    NEESpos(offset+k) = (xest(1:2, offset+k) - Xgt(1:2, offset+k))' * (Pest(1:2, 1:2, offset+k ) \ (xest(1:2, offset+k) - Xgt(1:2, offset+k)));
+    NEESvel(offset+k) = (xest(3:4, offset+k) - Xgt(3:4, offset+k))' * (Pest(3:4, 3:4, offset+k ) \ (xest(3:4, offset+k) - Xgt(3:4, offset+k)));
+    if k+offset < K+offset
+        [probbar(:, offset+k+1), xbar(:, :, offset+k+1), Pbar(:, :, :, offset+k+1)] = ...
+            tracker.predict(probhat(:, offset+k), xhat(:, :, offset+k), Phat(:, :, :, offset+k), Ts);
     end
 end
 
 % errors
-poserr = sqrt(sum((xest(1:2,:) - Xgt(1:2,:)).^2, 1));
+poserr = sqrt(sum((xest(1:2,:) - Xgt(1:2,1+offset:K+offset)).^2, 1));
 posRMSE = sqrt(mean(poserr.^2)); % not true RMSE (which is over monte carlo simulations)
-velerr = sqrt(sum((xest(3:4, :) - Xgt(3:4, :)).^2, 1));
+velerr = sqrt(sum((xest(3:4, :) - Xgt(3:4, 1+offset:K+offset)).^2, 1));
 velRMSE = sqrt(mean(velerr.^2)); % not true RMSE (which is over monte carlo simulations)
 peakPosDeviation = max(poserr);
 peakVelDeviation = max(velerr);
@@ -285,6 +292,8 @@ ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+%}
+%{
 %%
 %estimation "movie"
 mTL = 0.2; % maximum transparancy (between 0 and 1);
@@ -355,3 +364,4 @@ for k = plotRange
     drawnow;
     pause(plotpause)
 end
+%}
