@@ -293,8 +293,8 @@ ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
-%}
-%{
+
+
 %%
 %estimation "movie"
 mTL = 0.2; % maximum transparancy (between 0 and 1);
@@ -365,4 +365,3 @@ for k = plotRange
     drawnow;
     pause(plotpause)
 end
-%}
