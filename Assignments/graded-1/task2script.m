@@ -19,7 +19,7 @@ else
 end
 %%
 off = 0;
-K = 25;
+K = 100;
 
 
 % plot measurements close to the trajectory
@@ -62,15 +62,16 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART I %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Look at individual EKF-PDAs
+%{
 r = 5; 
 qCV = 0.05;                % acceleration covariance                      
-qCT = [0.05 , 0.000025];   % acceleration, turn rate covariance   
+qCT = [0.5 , 0.0025];      % acceleration, turn rate covariance   
 
 lambda = 1e-3;
 PD = 0.8;
 gateSize = 5^2;
 % choose model to tune
-s = 1;
+s = 2;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % make models
 models =  cell(2,1);
@@ -159,8 +160,8 @@ ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+%}
 
-%{
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PART II %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,14 +175,14 @@ gateSize = 5^2;
 
 % dynamic models
 qCV = 0.05;
-qCT = [0.005, 0.000025];
-x0 = [0; 0; 2; 0; 0];
+qCT = [0.5, 0.001];
+x0 = Xgt(:,off+1);%[0; 0; 2; 0; 0];
 P0 = diag([25, 25, 3, 3, 0.0005].^2);
 
 % markov chain (you are free to parametrize this in another way)
 PI11 = 0.95;
-PI22 = 0.95;
-p10 = 0.5;  % initial mode probability
+PI22 = 0.9;
+p10 = 0.9;  % initial mode probability
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PI = [PI11, (1 - PI22); (1 - PI11), PI22]; assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
 sprobs0 = [p10; (1 - p10)]; assert(sum(sprobs0) == 1, 'initial mode probabilities must sum to 1');
@@ -213,26 +214,26 @@ Pbar(:, : ,:, 1) = repmat(P0,[1,1,2]);
 probbar(:, 1) = sprobs0;
 
 % filter
-for k=1+offset:K+offset
+for k=1:K
     % Update
-    [probhat(:, offset+k), xhat(:, :, offset+k), Phat(:, :, :, offset+k)] = tracker.update(Z{offset+k}, probbar(:, offset+k), xbar(:, :, offset+k), Pbar(:, :, :, offset+k));
+    [probhat(:, k), xhat(:, :, k), Phat(:, :, :, k)] = tracker.update(Z{k}, probbar(:, k), xbar(:, :, k), Pbar(:, :, :, k));
     
     % Total state mean and cov
-    [xest(:, offset+k), Pest(:, :, offset+k)] =  tracker.imm.estimate(probhat(: , offset+k), xhat(:, :, offset+k), Phat(:, :, :, offset+k));
+    [xest(:, k), Pest(:, :, k)] =  tracker.imm.estimate(probhat(: , k), xhat(:, :, k), Phat(:, :, :, k));
     
-    NEES(offset+k) = (xest(:, offset+k) - Xgt(:, offset+k))' * (Pest(:, :, offset+k) \ (xest(:, offset+k) - Xgt(:, offset+k)));
-    NEESpos(offset+k) = (xest(1:2, offset+k) - Xgt(1:2, offset+k))' * (Pest(1:2, 1:2, offset+k ) \ (xest(1:2, offset+k) - Xgt(1:2, offset+k)));
-    NEESvel(offset+k) = (xest(3:4, offset+k) - Xgt(3:4, offset+k))' * (Pest(3:4, 3:4, offset+k ) \ (xest(3:4, offset+k) - Xgt(3:4, offset+k)));
-    if k+offset < K+offset
-        [probbar(:, offset+k+1), xbar(:, :, offset+k+1), Pbar(:, :, :, offset+k+1)] = ...
-            tracker.predict(probhat(:, offset+k), xhat(:, :, offset+k), Phat(:, :, :, offset+k), Ts);
+    NEES(k) = (xest(:, k) - Xgt(:, off+k))' * (Pest(:, :, k) \ (xest(:, k) - Xgt(:, off+k)));
+    NEESpos(k) = (xest(1:2, k) - Xgt(1:2, off+k))' * (Pest(1:2, 1:2, k ) \ (xest(1:2, k) - Xgt(1:2, k)));
+    NEESvel(k) = (xest(3:4, k) - Xgt(3:4, off+k))' * (Pest(3:4, 3:4, k ) \ (xest(3:4, k) - Xgt(3:4, k)));
+    if k+off < K+off
+        [probbar(:, k+1), xbar(:, :, k+1), Pbar(:, :, :, k+1)] = ...
+            tracker.predict(probhat(:, k), xhat(:, :, k), Phat(:, :, :, k), Ts);
     end
 end
 
 % errors
-poserr = sqrt(sum((xest(1:2,:) - Xgt(1:2,1+offset:K+offset)).^2, 1));
+poserr = sqrt(sum((xest(1:2,:) - Xgt(1:2,1+off:K+off)).^2, 1));
 posRMSE = sqrt(mean(poserr.^2)); % not true RMSE (which is over monte carlo simulations)
-velerr = sqrt(sum((xest(3:4, :) - Xgt(3:4, 1+offset:K+offset)).^2, 1));
+velerr = sqrt(sum((xest(3:4, :) - Xgt(3:4, 1+off:K+off)).^2, 1));
 velRMSE = sqrt(mean(velerr.^2)); % not true RMSE (which is over monte carlo simulations)
 peakPosDeviation = max(poserr);
 peakVelDeviation = max(velerr);
@@ -248,13 +249,13 @@ ANEES = mean(NEES)
 % plot
 figure(6); clf; hold on; grid on;
 plot(xest(1,:), xest(2,:));
-plot(Xgt(1,:), Xgt(2, :));
+plot(Xgt(1,1+off:K+off), Xgt(2, 1+off:K+off));
 axis('equal')
 title(sprintf('posRMSE = %.3f, velRMSE = %.3f, peakPosDev = %.3f, peakVelDev = %.3f',posRMSE, velRMSE, peakPosDeviation, peakVelDeviation))
 
 figure(7); clf; hold on; grid on;
 plot(xest(5,:))
-plot(Xgt(5,:))
+plot(Xgt(5,1+off:K+off))
 
 figure(8); clf;
 plot(probhat');
