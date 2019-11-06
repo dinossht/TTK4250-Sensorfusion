@@ -176,7 +176,7 @@ gateSize = 5^2;
 % dynamic models
 qCV = 0.05;
 qCT = [0.5, 0.001];
-x0 = Xgt(:,off+1);%[0; 0; 2; 0; 0];
+x0 = [0; 0; 2; 0; 0];%Xgt(:,off+1);%
 P0 = diag([25, 25, 3, 3, 0.0005].^2);
 
 % markov chain (you are free to parametrize this in another way)
