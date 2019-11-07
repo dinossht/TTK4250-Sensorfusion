@@ -335,6 +335,7 @@ classdef ESKF
             % attitude (just some suggested steps, you are free to change)
            qConj = [xnom(7), -xnom(8:10)']'; % conjugated nominal quaternion
            deltaQuat = quatProd(qConj,xtrue(7:10)); % the error quaternion
+           deltaQuat = deltaQuat/norm(deltaQuat,2); % normalization
            deltaTheta = 2*deltaQuat(2:4); % the error state (eq:10.72)
            
            deltaBias = xtrue(11:16) - xnom(11:16);
