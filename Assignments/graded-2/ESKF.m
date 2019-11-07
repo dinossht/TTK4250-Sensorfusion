@@ -68,8 +68,8 @@ classdef ESKF
             R = quat2rotmat(quat);
             
             % predictions
-            posPred = pos + Ts*vel + (Ts^2/2)*R*acc; 
-            velPred = vel + Ts*R*acc;
+            posPred = pos + Ts*vel + (Ts^2/2)*(R*acc+obj.g); 
+            velPred = vel + Ts*(R*acc+obj.g);
             
             % local rotation vector increment
             k = Ts * omega;
