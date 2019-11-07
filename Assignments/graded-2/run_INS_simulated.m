@@ -43,13 +43,11 @@ Ppred(13:15, 13:15, 1) = eye(3);
 
 %% run
 N = 90000;
-tic;
 GNSSk = 1;
 for k = 1:N
-    display(k);
     if  timeIMU(k) >= timeGNSS(GNSSk)
-        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS, leverarm);
-        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS, leverarm);
+        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
+        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
 
             
         GNSSk = GNSSk  + 1;
@@ -64,9 +62,9 @@ for k = 1:N
         Pest(:, :, k) = Ppred(:, :, k);    
     end
     
-    deltaX(:, k) = eskf.deltaX(xpred(:,k), xtrue(:,k));
+    deltaX(:, k) = eskf.deltaX(xest(:,k), xtrue(:,k));
     [NEES(:, k), NEESpos(:, k), NEESvel(:, k), NEESatt(:, k), NEESaccbias(:, k), NEESgyrobias(:, k)] = ...
-        eskf.NEES(xpred(:,k), Ppred(:,:,k), xtrue(:,k));
+        eskf.NEES(xest(:,k), Pest(:,:,k), xtrue(:,k));
     
     if k < N
 % Note that an IMU is causal and that it measures the acceleration over the last time step in some
@@ -80,7 +78,6 @@ for k = 1:N
     end
 end
 GNSSk = GNSSk - 1;
-timeelapsed = toc;
 %% plots
 figure(1);
 clf;
