@@ -5,17 +5,17 @@ steps = size(zAcc,2);
 
 %% Measurement noise
 % GNSS Position  measurement
-p_std =  10*[0.0900    0.0901    0.2581]'; % Measurement noise
+p_std =  [0.300    0.300    0.508]'; % Measurement noise
 RGNSS = diag(p_std.^2);
 
 % accelerometer
 qA = 1.4101e-04; % accelerometer measurement noise covariance
 qAb = 1.4101e-05; % accelerometer bias driving noise covariance
-pAcc = 0;%1.4101e-010; % accelerometer bias reciprocal time constant
+pAcc = 0;  % accelerometer bias reciprocal time constant
 
 qG = 2.0552e-07; % gyro measurement noise covariance
-qGb = 2.0552e-08;%^2;  % gyro bias driving noise covariance
-pGyro = 0;%2.0552e-011; % gyrp bias reciprocal time constant
+qGb = 2.0552e-08;  % gyro bias driving noise covariance
+pGyro = 0; % gyrp bias reciprocal time constant
 
 %% Estimator
 eskf = ESKF(qA, qG, qAb, qGb, pAcc, pGyro);
@@ -67,9 +67,9 @@ for k = 1:N
         eskf.NEES(xest(:,k), Pest(:,:,k), xtrue(:,k));
     
     if k < N
-% Note that an IMU is causal and that it measures the acceleration over the last time step in some
-% manner, and not the acceleration/rotation into the future. This means that it makes sense to use the
-% measurements at a time step k to predict the state from k − 1 to k and not from k to k + 1.
+        % Note that an IMU is causal and that it measures the acceleration over the last time step in some
+        % manner, and not the acceleration/rotation into the future. This means that it makes sense to use the
+        % measurements at a time step k to predict the state from k − 1 to k and not from k to k + 1.
         [xpred(:, k+1),  Ppred(:, :, k+1)] = eskf.predict(xest(:, k), Pest(:, :, k), zAcc(:,k+1), zGyro(:,k+1), dt);
         % sanity check, remove for speed
         if any(any(~isfinite(Ppred(:, :, k + 1))))
