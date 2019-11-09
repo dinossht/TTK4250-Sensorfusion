@@ -19,9 +19,11 @@ figure(9); clf;
 subplot(2,1,1); 
 plot(poserr); grid on;
 ylabel('position error')
+xlabel('timestep');
 subplot(2,1,2);
 plot(velerr); grid on;
 ylabel('velocity error')
+xlabel('timestep');
 
 figure(10); clf;
 subplot(3,1,1);
@@ -31,6 +33,7 @@ ciNEES = chi2inv([0.05, 0.95], 4);
 inCI = sum((NEES >= ciNEES(1)) .* (NEES <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 title(sprintf('%.2f%% inside CI', inCI))
+xlabel('timestep');
 
 subplot(3,1,2);
 plot(NEESpos); grid on; hold on;
@@ -38,6 +41,7 @@ ylabel('NEESpos');
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESpos >= ciNEES(1)) .* (NEESpos <= ciNEES(2)))/K * 100;
 title(sprintf('%.2f%% inside CI', inCI))
+xlabel('timestep');
 
 subplot(3,1,3);
 plot(NEESvel); grid on; hold on;
@@ -45,4 +49,5 @@ ylabel('NEESvel');
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
+xlabel('timestep');
 title(sprintf('%.2f%% inside CI', inCI))
