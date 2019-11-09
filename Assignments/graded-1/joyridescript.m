@@ -187,14 +187,14 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % IMM-PDA
 
 % sensor 
-r = 6;
+r = 10^2;
 PD = 0.95;
-lambda = 0.0000982474;
+lambda = 1e-06;%0.0000982474;
 gateSize = 5^2;
 
 % dynamic models
 qCV = 0.05
-qCT = [0.05 0.0025];
+qCT = [0.7 0.0001]; %[0.05, 0.0025];
 qCVh = 0.3;
 modIdx = 1:2;%1:3; 
 M = numel(modIdx);
@@ -204,7 +204,7 @@ P0 = diag([25, 25, 10, 10, pi/6].^2); % seems reasonable?
 
 % markov chain (other parameterizations can be simpler to tune)
 PI11 = 0.95;
-PI22 = 0.95;
+PI22 = 0.9;
 PI33 = 0.1;
 
 PI = [PI11, 0.025, 0.025;
@@ -285,7 +285,7 @@ ANEES = mean(NEES)
 figure(6); clf; hold on; grid on;
 plot(xest(1,:), xest(2,:));
 plot(Xgt(1,:), Xgt(2, :));
-scatter(Zmat(1,:), Zmat(2,:))
+%scatter(Zmat(1,:), Zmat(2,:))
 axis('equal')
 title(sprintf('posRMSE = %.3f, velRMSE = %.3f, peakPosDev = %.3f, peakVelDev = %.3f',posRMSE, velRMSE, peakPosDeviation, peakVelDeviation))
 
@@ -295,19 +295,25 @@ hold on; grid on;
 plot(sqrt(sum(xest(3:4,:).^2,1)))
 plot(sqrt(sum(Xgt(3:4,:).^2,1)))
 ylabel('speed')
+xlabel('timestep')
+
 subplot(3,1,2);
 hold on; grid on;
 plot(atan2(xest(4,:), xest(3,:)))
 plot(atan2(Xgt(4,:), Xgt(3,:)))
 ylabel('theta')
+xlabel('timestep')
+
 subplot(3,1,3)
 hold on; grid on;
 plot(diff(unwrap(atan2(xest(4,:), xest(3,:))))./Ts')
 plot(diff(unwrap(atan2(Xgt(4,:), Xgt(3,:))))./Ts')
 ylabel('omega')
+xlabel('timestep')
 
 figure(8); clf;
 plot(probhat');
+xlabel('timestep')
 grid on;
 legend('CV','CT','CV-high');
 
@@ -318,11 +324,13 @@ ylabel('position error')
 subplot(2,1,2);
 plot(velerr); grid on;
 ylabel('velocity error')
+xlabel('timestep')
 
 figure(10); clf;
 subplot(3,1,1);
 plot(NEES); grid on; hold on;
 ylabel('NEES');
+xlabel('timestep')
 ciNEES = chi2inv([0.05, 0.95], 4);
 inCI = sum((NEES >= ciNEES(1)) .* (NEES <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
@@ -331,6 +339,7 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 subplot(3,1,2);
 plot(NEESpos); grid on; hold on;
 ylabel('NEESpos');
+xlabel('timestep')
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESpos >= ciNEES(1)) .* (NEESpos <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
@@ -339,6 +348,7 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 subplot(3,1,3);
 plot(NEESvel); grid on; hold on;
 ylabel('NEESvel');
+xlabel('timestep')
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
