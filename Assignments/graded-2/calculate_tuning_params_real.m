@@ -1,10 +1,45 @@
 clear; clc; close all;
+
+%% Noise power calculation GNSS
+clf;
+in = 1;
+figure(1);
+
+gainx = 10;
+gainy = 10;
+gainz = 0.1;
+
+load task_real.mat;
+subplot(311)
+plot_periodogram(gainx*detrend(zGNSS(in,1:900)),1); hold on;
+load task_simulation.mat;
+plot_periodogram(detrend(zGNSS(in,1:900)),1); hold on; legend('real','sim')
+
+in = 2;
+load task_real.mat;
+subplot(312)
+plot_periodogram(gainy*detrend(zGNSS(in,1:900)),1); hold on;
+load task_simulation.mat;
+plot_periodogram(detrend(zGNSS(in,1:900)),1); hold on;legend('real','sim')
+
+in = 3;
+load task_real.mat;
+subplot(313)
+plot_periodogram(gainz*detrend(zGNSS(in,1:900)),1); hold on;
+load task_simulation.mat;
+plot_periodogram(detrend(zGNSS(in,1:900)),1); hold on;legend('real','sim')
+
+
+
+
+%%
 load task_real.mat;
 %dt = mean(diff(timeIMU));
 %steps = size(zAcc,2);
-
-
 %% Noise power calculation GNSS
+
+
+
 plot_periodogram(zGNSS(1,:),1,1); hold on;
 plot_periodogram(zGNSS(2,:),1,1); hold on;
 sigma_x_y = 0.05;%exp(6.87/20)^2;
