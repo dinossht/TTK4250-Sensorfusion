@@ -6,7 +6,7 @@ K = size(zAcc,2);
 K = round(K / 10);
 %% Measurement noise
 % GNSS Position  measurement
-p_std =  [1 1 1]*[0.300    0.300    0.508]'; % Measurement noise
+p_std =  [0.300    0.300    0.508]'; % Measurement noise
 RGNSS = diag(p_std.^2);
 
 % accelerometer
@@ -56,7 +56,7 @@ for k = 1:N
         NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
         [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
         GNSSk = GNSSk + 1;
-    
+        posErr(:, GNSSk) = zGNSS(:,GNSSk)-xest(1:3, k);
         if any(any(~isfinite(Pest(:, :, k))))
             error('not finite Pest at time %d',k)
         end
@@ -135,3 +135,12 @@ gaussCompare = sum(randn(3, numel(NIS)).^2, 1);
 boxplot([NIS', gaussCompare'],'notch','on',...
         'labels',{'NIS','gauss'});
 grid on;
+
+
+figure(5); clf; hold on;
+
+subplot(5,1,1);
+plot(posErr');%zGNSS(1:3,1:size(posEST,2))'-posEST(1:3,:)');
+grid on;
+ylabel('NED position error [m]')
+legend('North', 'East', 'Down')
