@@ -3,18 +3,20 @@ load task_real;
 IMUTs = diff(timeIMU);
 dt = mean(IMUTs);
 K = size(zAcc,2);
+K = round(K / 1);
 %% Measurement noise
 % GNSS Position  measurement
-...
+p_std =  [0.300    0.300    0.508]'; % Measurement noise
+RGNSS = diag(p_std.^2);
 
 % accelerometer
-qA = ...^2; % accelerometer measurement noise covariance
-qAb = ...^2; % accelerometer bias driving noise covariance
-pAcc = ...; % accelerometer bias reciprocal time constant
+qA = 1.4101e-04; % accelerometer measurement noise covariance
+qAb = 1.4101e-05; % accelerometer bias driving noise covariance
+pAcc = 0;  % accelerometer bias reciprocal time constant
 
-qG = ...^2; % gyro measurement noise covariance
-qGb = ...^2;  % gyro bias driving noise covariance
-pGyro = ...; % gyrp bias reciprocal time constant
+qG = 2.0552e-07; % gyro measurement noise covariance
+qGb = 2.0552e-08;  % gyro bias driving noise covariance
+pGyro = 0; % gyrp bias reciprocal time constant
 
 
 %% Estimator
@@ -47,24 +49,24 @@ for k = 1:N
     t = timeIMU(k);
     
     if mod(k, 1000) == 0
-        fprintf('time %.3f at step %d\n', t - IMUtime(1), k);
+        fprintf('time %.3f at step %d\n', t - timeIMU(1), k);
     end
     
     if timeGNSS(GNSSk) < t
-        NIS(GNSSk) = ...;
-        [xest(:, k), Pest(:, :, k)] = ...;
+        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
+        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
         GNSSk = GNSSk + 1;
     
         if any(any(~isfinite(Pest(:, :, k))))
             error('not finite Pest at time %d',k)
         end
     else % no updates so estimate = prediction
-        xest(:, k) = ...;
-        Pest(:, :, k) = ...;
+        xest(:, k) = xpred(:, k);
+        Pest(:, :, k) = Ppred(:, :, k);
     end
 
     if k < K
-        [xpred(:, k + 1),  Ppred(:, :, k + 1)] = ...;
+        [xpred(:, k + 1),  Ppred(:, :, k + 1)] = eskf.predict(xest(:, k), Pest(:, :, k), zAcc(:,k+1), zGyro(:,k+1), dt);
         
         if any(any(~isfinite(Ppred(:, :, k + 1))))
             error('not finite Ppred at time %d', k + 1)
@@ -81,31 +83,41 @@ grid on; axis equal
 xlabel('East [m]')
 ylabel('North [m]')
 zlabel('Altitude [m]')
+legend('est','gnss')
 
 %%
 eul = quat2eul(xest(7:10, :))*180/pi;
 figure(2); clf; hold on;
+
 subplot(5,1,1);
 plot(timeIMU(1:N) - timeIMU(1), xest(1:3, 1:N))
 grid on;
 ylabel('NED position [m]')
+legend('North', 'East', 'Down')
+
 subplot(5,1,2);
 plot(timeIMU(1:N) - timeIMU(1), xest(4:6, 1:N))
 grid on;
 ylabel('Velocitites [m/s]')
+legend('North', 'East', 'Down')
+
 subplot(5,1,3);
 plot(timeIMU(1:N) - timeIMU(1), eul(:, 1:N))
 grid on;
 ylabel('euler angles [deg]')
 legend('\phi', '\theta', '\psi')
+
 subplot(5, 1, 4)
 plot(timeIMU(1:N) - timeIMU(1), xest(11:13, 1:N))
 grid on;
 ylabel('Accl bias [m/s^2]')
+legend('x', 'y', 'z')
+
 subplot(5, 1, 5)
 plot(timeIMU(1:N) - timeIMU(1), xest(14:16, 1:N)*180/pi * 3600)
 grid on;
 ylabel('Gyro bias [rad/s]')
+legend('x', 'y', 'z')
 
 figure(3);
 alpha = 0.05;
