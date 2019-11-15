@@ -82,7 +82,7 @@ classdef EKFSLAM
             
             % in place for performance
             G = eye(3);
-            P(1:3, 1:3) = Fx*P(1:3, 1:3)*Fx' + G*obj.Q*G';
+            P(1:3, 1:3) = Fx*P(1:3, 1:3)*Fx' + Fu*obj.Q*Fu';
             P(1:3, 4:end) = Fx*P(1:3, 4:end);
             P(4:end, 1:3) = P(1:3, 4:end)'; 
             
@@ -146,12 +146,12 @@ classdef EKFSLAM
             for i = 1:numM
                 inds = 2*(i - 1) + [1; 2];
                 
-                jac_z_b = ... 
+                jac_z_b = [-I2 -Rpihalf*m_minus_rho];
                 
-                Hx(inds(1), :) = z_c(inds)'/(zr(i))*[-I2 -Rpihalf*m_minus_rho];% jac z_r 
-                Hx(inds(2), :) = z_c(inds)'*Rpihalf'/(zr(i)^2)*[-I2 -Rpihalf*m_minus_rho];% jac z_phi
+                Hx(inds(1), :) = z_c(inds)'/(zr(i))*jac_z_b;  % jac z_r 
+                Hx(inds(2), :) = z_c(inds)'*Rpihalf'/(zr(i)^2)*jac_z_b;  % jac z_phi
             
-                Hm(inds, inds) = Hx(inds,1:2);%... should be negative of the two first colums of Hx
+                Hm(inds, inds) = Hx(inds,1:2);  %... should be negative of the two first colums of Hx
             end
         
             % concatenate the H matrix
