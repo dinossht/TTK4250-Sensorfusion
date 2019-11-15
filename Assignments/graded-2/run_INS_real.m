@@ -139,7 +139,7 @@ grid on;
 
 figure(5); clf; hold on;
 
-subplot(5,1,1);
+%subplot(5,1,1);
 plot(posErr');%zGNSS(1:3,1:size(posEST,2))'-posEST(1:3,:)');
 grid on;
 ylabel('NED position error [m]')
