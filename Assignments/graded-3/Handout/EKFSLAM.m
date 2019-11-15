@@ -28,11 +28,13 @@ classdef EKFSLAM
         end
         
         function xpred = f(~, x, u)
+            % takes a pose and odometry and predicts it to the next time step
             % (eq: 11.7)
             xpred = x + [rotmat2d(x(3))*u(1:2); u(3)];
         end
         
         function Fx = Fx(~, x, u)
+            % Jacobian of the above function with respect to the pose
             % (eq: 11.13)
             Fx = [
                 1   0       -u(1)*sin(x(3))-u(2)*cos(x(3));
@@ -47,6 +49,7 @@ classdef EKFSLAM
         end
         
         function Fu = Fu(~, x, u)
+             % that is the Jacobian of the above function with respect to the odometry
              % (eq: 11.14)
               Fu = [
                   cos(x(3)) -sin(x(3)) 0;
@@ -64,6 +67,9 @@ classdef EKFSLAM
             x = eta(1:3); % pose
             m = eta(4:end); % map
             
+            % takes the state (pose and map) , its covariance and 
+            % odometry to predict the state and covariance
+            % (eq: 11.19)
             xpred = %
             Fx = %
             Fu = %
