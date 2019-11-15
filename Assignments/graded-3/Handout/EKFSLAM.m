@@ -96,19 +96,24 @@ classdef EKFSLAM
         end
         
         function zpred = h(obj, eta)
+            % that predicts the measurements of all
+            % the landmarks in the state, corresponding to equations (11.10) - (11.11)
             x = eta(1:3); % pose 
             m = reshape(eta(4:end), 2 ,[]); % map (2 x m now)
             
             Rot = rotmat2d(-x(3)); % rot from world to body
             
             % cartesian measurement in world
-            z_c = ... - Rot' * obj.sensOffset;
+            z_c = m - x(1:2) - Rot' * obj.sensOffset;
             
             % in body
-            z_b = ...
+            z_b = Rot*z_c;
             
-            % polar
-            zpred = ...
+            % polar (use maybe cart2pol)
+            for i=1:size(m,2)
+                zpred(:,i) = [norm(z_c(:,i),2); atan2(z_b(2,i),z_b(1,i))];
+            end
+            %zpred(1:2,:) = cart2pol(z_b(1,:),z_b(2,:));
             
             % make column again
             zpred = zpred(:); 
