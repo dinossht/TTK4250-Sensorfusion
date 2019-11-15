@@ -129,8 +129,8 @@ classdef EKFSLAM
             
             Rot = rotmat2d(x(3));
             
-            m_minus_rho = ...
-            z_c = ... - Rot * obj.sensOffset;
+            m_minus_rho = m - x(1:2);
+            z_c = m_minus_rho - Rot * obj.sensOffset;
             
             zpred = reshape(obj.h(eta), 2, []);
             zr = zpred(1,:);
@@ -141,15 +141,17 @@ classdef EKFSLAM
             Hx  = zeros(2 * numM, 3); % pose columns
             Hm = zeros(2 * numM, 2 * numM); % map columns (the rest)
             
+            I2 = eye(2);
+            
             for i = 1:numM
                 inds = 2*(i - 1) + [1; 2];
                 
                 jac_z_b = ... 
                 
-                Hx(inds(1), :) = ... jac z_r 
-                Hx(inds(2), :) = ... jac z_phi
+                Hx(inds(1), :) = z_c(inds)'/(zr(i))*[-I2 -Rpihalf*m_minus_rho];% jac z_r 
+                Hx(inds(2), :) = z_c(inds)'*Rpihalf'/(zr(i)^2)*[-I2 -Rpihalf*m_minus_rho];% jac z_phi
             
-                Hm(inds, inds) = ... should be negative of the two first colums of Hx
+                Hm(inds, inds) = Hx(inds,1:2);%... should be negative of the two first colums of Hx
             end
         
             % concatenate the H matrix
@@ -169,6 +171,9 @@ classdef EKFSLAM
             lmnew = zeros(size(z));
             Gx = zeros(numLmk * 2, 3);
             Rall = zeros(numLmk * 2, numLmk * 2);
+            
+            I2 = eye(2);
+            R_plus_pihalf = rotmat2d(eta(3)+ pi/2);
 
             for j = 1:numLmk
                 % find indeces and the relevant measurement
@@ -178,9 +183,9 @@ classdef EKFSLAM
                 rot = rotmat2d(zj(2) + eta(3));
 
                 lmnew(inds) = ... % mean
-                Gx(inds, :) = ... % jac h^1 wrt. x
-                Gz =  % jac h^-1 wrt. z
-                Rall(inds, inds) = ... % the linearized measurement noise
+                Gx(inds, :) =  [I2 zj(2)*rot(:,2) + R_plus_pihalf*obj.sensOffset]; % jac h^-1 wrt. x
+                Gz =  rot*diag(1,zj(2));% jac h^-1 wrt. z
+                Rall(inds, inds) = obj.R; % the linearized measurement noise
 
             end
             
@@ -222,9 +227,9 @@ classdef EKFSLAM
             numLmk = (numel(eta) - 3)/2; % number of landmarks
             if numLmk > 0
                 % prediction and innovation covariance
-                zpred = ...
-                H = ...
-                S = ...
+                zpred = obj.h(eta);
+                H = obj.H(eta);
+                S = H*P*H' + obj.R;
                 z = z(:); % vectorize
                 
                 % perform data association if it is asked for
@@ -235,10 +240,10 @@ classdef EKFSLAM
                 v(2:2:end) = wrapToPi(v(2:2:end)); % angles are in [-pi, pi]
 
                 % Kalman update
-                W = ...
-                etaupd = ...
-                NIS = ...
-                Pupd = ...
+                W = P*H'/S;
+                etaupd = eta + W*v;
+                NIS = v'*S*v;
+                Pupd = (eye(size(P,1)) - W*H)*P;
                 
                 % sanity check, remove for speed
                 if any(eig(Pupd) <= 0) % costly, remove when tested
@@ -263,7 +268,7 @@ classdef EKFSLAM
                     znew = z(zNewInds);
                     
                     % create new landmarks
-                    [etaupd, Pupd] = ...
+                    [etaupd, Pupd] = addLandmarks(eta, P, znew);
                 end
             end  
         end
