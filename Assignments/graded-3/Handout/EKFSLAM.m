@@ -189,12 +189,12 @@ classdef EKFSLAM
             end
             
             % augment state
-            etaadded = ...
+            etaadded = [eta;lmnew];
             
             % add covariances
-            Padded = blkdiag(P, ...);
-            Padded((n+1):end, 1:n) = ...
-            Padded(1:n, (n+1):end) = ...
+            Padded = blkdiag(P, Gx*P(1:3,1:3)*Gx' + Rall;
+            Padded((n+1):end, 1:n) = Gx*P(1:3,:);
+            Padded(1:n, (n+1):end) = Padded((n+1):end, 1:n)';
 
             % sanity check, remove for speed
             if any(eig(Pupd) <= 0) % costly, remove when tested
