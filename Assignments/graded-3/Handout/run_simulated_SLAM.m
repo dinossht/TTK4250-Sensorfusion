@@ -1,10 +1,11 @@
+clear; close all; clc;
 load simulatedSLAM;
 K = numel(z);
 %%
-Q = ...
-R = ...
+Q = eye(3);
+R = eye(2);
 doAsso = true;
-JCBBalphas = [..., ...] % first is for joint compatibility, second is individual 
+JCBBalphas = [0.5, 0.5]; % first is for joint compatibility, second is individual 
 slam = EKFSLAM(Q, R, doAsso, JCBBalphas);
 
 % allocate
@@ -21,9 +22,10 @@ Ppred{1} = zeros(3, 3); % we also say that we are 100% sure about that
 
 figure(10); clf;
 axAsso = gca;
-N = K;
+N = 100;%K;
 doAssoPlot = true; % set to true to se the associations that are done
 for k = 1:N
+	display(N-k);
     [xhat{k}, Phat{k}, NIS(k), a{k}] =  slam.update(xpred{k}, Ppred{k}, z{k});
     if k < K
         [xpred{k + 1}, Ppred{k + 1}] = slam.predict(xhat{k}, Phat{k}, odometry(:, k));
@@ -31,10 +33,11 @@ for k = 1:N
     
     
     % checks
-    if size(xhat{k},1) ~= size(Phat{k},1)
-        error('dimensions of mean and covariance do not match')
-    end
+    %if size(xhat{k},1) ~= size(Phat{k},1)
+    %    error('dimensions of mean and covariance do not match')
+    %end
     
+    %{
     if doAssoPlot && k > 1 %&& any(a{k} == 0) % uncoment last part to only see new creations
         cla(axAsso); hold on;grid  on;
         zpred = reshape(slam.h(xpred{k}), 2, []);
@@ -46,6 +49,7 @@ for k = 1:N
         title(axAsso, sprintf('k = %d: %s', k, sprintf('%d, ',a{k})));
         pause();
     end
+    %}
 end
 
 % plotting

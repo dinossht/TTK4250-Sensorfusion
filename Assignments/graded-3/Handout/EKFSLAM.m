@@ -44,9 +44,9 @@ classdef EKFSLAM
                 ];
             
             % check that jacobian is correct, remove for speed
-            if norm(F - jacobianFD(@(X) obj.f(X, u), x, 1e-5), 'fro') > 1e-3
-                error('some error in pred Jac')
-            end
+            %if norm(Fx - jacobianFD(@(X) obj.f(X, u), x, 1e-5), 'fro') > 1e-3
+            %    error('some error in pred Jac')
+            %end
         end
         
         function Fu = Fu(~, x, u)
@@ -59,9 +59,9 @@ classdef EKFSLAM
                   0          0         1
                   ];
               % check that the jacobian is correct, remove for speed
-            if norm(F - jacobianFD(@(U) obj.f(x, U), x, 1e-5), 'fro') > 1e-3
-                error('some error in pred Jac')
-            end            
+            %if norm(F - jacobianFD(@(U) obj.f(x, U), x, 1e-5), 'fro') > 1e-3
+            %    error('some error in pred Jac')
+            %end            
         end
         
         function [etapred, P] =  predict(obj, eta, P, zOdo)
@@ -84,9 +84,9 @@ classdef EKFSLAM
             etapred = [xpred; m];
             
             % check that the covariance makes sense
-            if any(eig(Ppred) <= 0) % costly, remove when tested
-                warn('EKFpredict got cov not PSD')
-            end
+            %if any(eig(Ppred) <= 0) % costly, remove when tested
+            %    warn('EKFpredict got cov not PSD')
+            %end
         end
         
         function zpred = h(obj, eta)
@@ -152,10 +152,10 @@ classdef EKFSLAM
             H = [Hx, Hm];
             
             % check that it is done correctly, remove for speed
-            if norm(H - jacobianFD(@(X) obj.h(X), eta, 1e-5), 'fro') > 1e-3
-                error('some error in meas Jac')
-            end
-        end-
+            %if norm(H - jacobianFD(@(X) obj.h(X), eta, 1e-5), 'fro') > 1e-3
+            %    error('some error in meas Jac')
+            %end
+        end
         
         function [etaadded, Padded] = addLandmarks(obj, eta, P, z)
             % Implement the function that inverts the masurement function and creates new landmarks and their
@@ -182,7 +182,7 @@ classdef EKFSLAM
                 lmnew(inds) = eta(1:2) + B2W*([zj(1)*cos(zj(2)); zj(1)*sin(zj(2))] + obj.sensOffset);
                 
                 Gx(inds, :) =  [I2 zj(1)*rot(:,2) + R_plus_pihalf*obj.sensOffset]; % jac h^-1 wrt. x
-                Gz =  rot*diag(1,zj(1));% jac h^-1 wrt. z
+                Gz =  rot*diag([1,zj(1)]);% jac h^-1 wrt. z
                 
                 Rall(inds, inds) = Gz*obj.R*Gz'; % the linearized measurement noise
 
@@ -192,14 +192,14 @@ classdef EKFSLAM
             etaadded = [eta;lmnew];
             
             % add covariances
-            Padded = blkdiag(P, Gx*P(1:3,1:3)*Gx' + Rall;
+            Padded = blkdiag(P, Gx*P(1:3,1:3)*Gx' + Rall);
             Padded((n+1):end, 1:n) = Gx*P(1:3,:);
             Padded(1:n, (n+1):end) = Padded((n+1):end, 1:n)';
 
             % sanity check, remove for speed
-            if any(eig(Pupd) <= 0) % costly, remove when tested
-                warning('EKFupdate got cov not PSD after adding a landmark');
-            end
+            %if any(eig(Padded) <= 0) % costly, remove when tested
+            %    warning('EKFupdate got cov not PSD after adding a landmark');
+            %end
         end
         
         function [z, zpred, H, S, a] = associate(obj, z, zpred, H, S)
@@ -223,12 +223,18 @@ classdef EKFSLAM
         end
         
         function [etaupd, Pupd, NIS, a] = update(obj, eta, P, z)    
+            % takes the prior mean and
+            % covariance and a set of measurements to update the map and pose estimates as well as calculating
+            % NIS and creating new landmarks. The data association is done for you so you only need to make
+            % make the EKF update.
             numLmk = (numel(eta) - 3)/2; % number of landmarks
             if numLmk > 0
                 % prediction and innovation covariance
                 zpred = obj.h(eta);
                 H = obj.H(eta);
-                S = H*P*H' + obj.R;
+                
+                
+                S = H*P*H' + kron(eye(numLmk),obj.R);
                 z = z(:); % vectorize
                 
                 % perform data association if it is asked for
@@ -241,13 +247,13 @@ classdef EKFSLAM
                 % Kalman update
                 W = P*H'/S;
                 etaupd = eta + W*v;
-                NIS = v'*S*v;
+                NIS = v'*inv(S)*v;
                 Pupd = (eye(size(P,1)) - W*H)*P;
                 
                 % sanity check, remove for speed
-                if any(eig(Pupd) <= 0) % costly, remove when tested
-                    warn('EKFupdate got cov not PSD');
-                end
+                %if any(eig(Pupd) <= 0) % costly, remove when tested
+                %    warn('EKFupdate got cov not PSD');
+                %end
             else % all measurements are new landmarks
                 a = zeros(size(z, 2), 1);
                 z = z(:);
@@ -267,7 +273,7 @@ classdef EKFSLAM
                     znew = z(zNewInds);
                     
                     % create new landmarks
-                    [etaupd, Pupd] = addLandmarks(eta, P, znew);
+                    [etaupd, Pupd] = obj.addLandmarks(eta, P, znew);
                 end
             end  
         end
