@@ -29,12 +29,16 @@ classdef EKFSLAM
         
         function xpred = f(~, x, u)
             % (eq: 11.7)
-            psi = x(3);
-            xpred = x + [rotmat2d(psi)*u(1:2); u(3)];
+            xpred = x + [rotmat2d(x(3))*u(1:2); u(3)];
         end
         
         function Fx = Fx(~, x, u)
-            Fx = %
+            % (eq: 11.13)
+            Fx = [
+                1   0       -u(1)*sin(x(3))-u(2)*cos(x(3));
+                0   1        u(1)*cos(x(3))-u(2)*sin(x(3));
+                0   0        1                              
+                ];
             
             % check that jacobian is correct, remove for speed
             if norm(F - jacobianFD(@(X) obj.f(X, u), x, 1e-5), 'fro') > 1e-3
@@ -43,7 +47,12 @@ classdef EKFSLAM
         end
         
         function Fu = Fu(~, x, u)
-              Fu = %
+             % (eq: 11.14)
+              Fu = [
+                  cos(x(3)) -sin(x(3)) 0;
+                  cos(x(3)) -cos(x(3)) 0;
+                  0          0         1
+                  ];
               
               % check that the jacobian is correct, remove for speed
             if norm(F - jacobianFD(@(U) obj.f(x, U), x, 1e-5), 'fro') > 1e-3
