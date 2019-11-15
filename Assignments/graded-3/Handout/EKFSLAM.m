@@ -120,6 +120,8 @@ classdef EKFSLAM
         end
         
         function H = H(obj, eta)
+            % the jacobian of the above measurement function, EKFSLAM.H(obj, eta), 
+            % given by equa-tions (11.16) - (11.18)
             x = eta(1:3); % pose
             m = reshape(eta(4:end), 2 ,[]); % map
             
