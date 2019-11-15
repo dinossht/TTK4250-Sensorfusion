@@ -1,7 +1,7 @@
 classdef EKFSLAM
     properties
-        Q
-        R
+        Q % 
+        R % støy i landmark måling
         doAsso
         alpha
         sensOffset
@@ -31,6 +31,7 @@ classdef EKFSLAM
             % takes a pose and odometry and predicts it to the next time step
             % (eq: 11.7)
             xpred = x + [rotmat2d(x(3))*u(1:2); u(3)];
+            xpred(3) = wrapTo2Pi(xpred(3));
         end
         
         function Fx = Fx(~, x, u)
@@ -52,12 +53,6 @@ classdef EKFSLAM
              % that is the Jacobian of the above function with respect to the odometry
              % (eq: 11.14)
              
-              %Fu = [
-              %    cos(x(3)) -sin(x(3)) 0;
-              %    cos(x(3)) -cos(x(3)) 0;
-              %    0          0         1
-              %    ];
-              
               Fu = [
                   cos(x(3)) -sin(x(3)) 0;
                   sin(x(3))  cos(x(3)) 0;
@@ -81,7 +76,6 @@ classdef EKFSLAM
             Fu      = obj.Fu(x, zOdo);
             
             % in place for performance
-            G = eye(3);
             P(1:3, 1:3) = Fx*P(1:3, 1:3)*Fx' + Fu*obj.Q*Fu';
             P(1:3, 4:end) = Fx*P(1:3, 4:end);
             P(4:end, 1:3) = P(1:3, 4:end)'; 
@@ -146,12 +140,12 @@ classdef EKFSLAM
             for i = 1:numM
                 inds = 2*(i - 1) + [1; 2];
                 
-                jac_z_b = [-I2 -Rpihalf*m_minus_rho];
+                jac_z_b = [-I2 -Rpihalf*m_minus_rho(:,i)];
                 
-                Hx(inds(1), :) = z_c(inds)'/(zr(i))*jac_z_b;  % jac z_r 
-                Hx(inds(2), :) = z_c(inds)'*Rpihalf'/(zr(i)^2)*jac_z_b;  % jac z_phi
+                Hx(inds(1), :) = z_c(:,i)'/(zr(i))*jac_z_b;  % jac z_r 
+                Hx(inds(2), :) = z_c(:,i)'*Rpihalf'/(zr(i)^2)*jac_z_b;  % jac z_phi
             
-                Hm(inds, inds) = Hx(inds,1:2);  %... should be negative of the two first colums of Hx
+                Hm(inds, inds) = -Hx(inds,1:2);  %... should be negative of the two first colums of Hx
             end
         
             % concatenate the H matrix
@@ -161,9 +155,11 @@ classdef EKFSLAM
             if norm(H - jacobianFD(@(X) obj.h(X), eta, 1e-5), 'fro') > 1e-3
                 error('some error in meas Jac')
             end
-        end
+        end-
         
         function [etaadded, Padded] = addLandmarks(obj, eta, P, z)
+            % Implement the function that inverts the masurement function and creates new landmarks and their
+            % covariances i
             n = size(P, 1);
             numLmk = numel(z)/2;
             
@@ -182,10 +178,13 @@ classdef EKFSLAM
                 
                 rot = rotmat2d(zj(2) + eta(3));
 
-                lmnew(inds) = ... % mean
-                Gx(inds, :) =  [I2 zj(2)*rot(:,2) + R_plus_pihalf*obj.sensOffset]; % jac h^-1 wrt. x
-                Gz =  rot*diag(1,zj(2));% jac h^-1 wrt. z
-                Rall(inds, inds) = obj.R; % the linearized measurement noise
+                B2W = rotmat2d(eta(3));
+                lmnew(inds) = eta(1:2) + B2W*([zj(1)*cos(zj(2)); zj(1)*sin(zj(2))] + obj.sensOffset);
+                
+                Gx(inds, :) =  [I2 zj(1)*rot(:,2) + R_plus_pihalf*obj.sensOffset]; % jac h^-1 wrt. x
+                Gz =  rot*diag(1,zj(1));% jac h^-1 wrt. z
+                
+                Rall(inds, inds) = Gz*obj.R*Gz'; % the linearized measurement noise
 
             end
             
