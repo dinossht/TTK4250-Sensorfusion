@@ -37,9 +37,9 @@ classdef EKFSLAM
             % Jacobian of the above function with respect to the pose
             % (eq: 11.13)
             Fx = [
-                1   0       -u(1)*sin(x(3))-u(2)*cos(x(3));
-                0   1        u(1)*cos(x(3))-u(2)*sin(x(3));
-                0   0        1                              
+                1   0  -u(1)*sin(x(3))-u(2)*cos(x(3));
+                0   1   u(1)*cos(x(3))-u(2)*sin(x(3));
+                0   0   1                              
                 ];
             
             % check that jacobian is correct, remove for speed
@@ -51,12 +51,18 @@ classdef EKFSLAM
         function Fu = Fu(~, x, u)
              % that is the Jacobian of the above function with respect to the odometry
              % (eq: 11.14)
+             
+              %Fu = [
+              %    cos(x(3)) -sin(x(3)) 0;
+              %    cos(x(3)) -cos(x(3)) 0;
+              %    0          0         1
+              %    ];
+              
               Fu = [
                   cos(x(3)) -sin(x(3)) 0;
-                  cos(x(3)) -cos(x(3)) 0;
+                  sin(x(3))  cos(x(3)) 0;
                   0          0         1
                   ];
-              
               % check that the jacobian is correct, remove for speed
             if norm(F - jacobianFD(@(U) obj.f(x, U), x, 1e-5), 'fro') > 1e-3
                 error('some error in pred Jac')
@@ -70,14 +76,14 @@ classdef EKFSLAM
             % takes the state (pose and map) , its covariance and 
             % odometry to predict the state and covariance
             % (eq: 11.19)
-            xpred = %
-            Fx = %
-            Fu = %
+            xpred   = obj.f(x, zOdo);
+            Fx      = obj.Fx(x, zOdo);
+            Fu      = obj.Fu(x, zOdo);
             
             % in place for performance
-            P(1:3, 1:3) = %
-            P(1:3, 4:end) = % 
-            P(4:end, 1:3) = % 
+            P(1:3, 1:3) = Fx*P(1:3, 1:3)*Fx' + R*Q*R';
+            P(1:3, 4:end) = Fu*P(1:3, 4:end)*Fu' + ; 
+            P(4:end, 1:3) = ; 
             
             % concatenate pose and landmarks again
             etapred = [xpred; m];
