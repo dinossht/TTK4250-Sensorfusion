@@ -81,9 +81,10 @@ classdef EKFSLAM
             Fu      = obj.Fu(x, zOdo);
             
             % in place for performance
-            P(1:3, 1:3) = Fx*P(1:3, 1:3)*Fx' + R*Q*R';
-            P(1:3, 4:end) = Fu*P(1:3, 4:end)*Fu' + ; 
-            P(4:end, 1:3) = ; 
+            G = eye(3);
+            P(1:3, 1:3) = Fx*P(1:3, 1:3)*Fx' + G*obj.Q*G';
+            P(1:3, 4:end) = Fx*P(1:3, 4:end);
+            P(4:end, 1:3) = P(1:3, 4:end)'; 
             
             % concatenate pose and landmarks again
             etapred = [xpred; m];
