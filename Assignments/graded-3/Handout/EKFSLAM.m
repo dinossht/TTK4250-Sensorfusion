@@ -28,7 +28,9 @@ classdef EKFSLAM
         end
         
         function xpred = f(~, x, u)
-            xpred = %
+            % (eq: 11.7)
+            psi = x(3);
+            xpred = x + [rotmat2d(psi)*u(1:2); u(3)];
         end
         
         function Fx = Fx(~, x, u)
