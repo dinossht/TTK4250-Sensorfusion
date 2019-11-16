@@ -3,7 +3,7 @@ load task_real;
 IMUTs = diff(timeIMU);
 dt = mean(IMUTs);
 K = size(zAcc,2);
-K = round(K / 10);
+K = round(K / 1);
 %% Measurement noise
 % GNSS Position  measurement
 p_std =  0.2*[0.300    0.300    0.508]'; % Measurement noise
@@ -45,6 +45,8 @@ Ppred(13:15, 13:15, 1) = (2e-5)^2 * eye(3);
 %% run
 N = K;
 GNSSk = 1;
+innn = 10-GNSSaccuracy;
+scaling = (innn/max(innn)).^2;
 for k = 1:N
     t = timeIMU(k);
     
@@ -53,8 +55,8 @@ for k = 1:N
     end
     
     if timeGNSS(GNSSk) < t
-        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
-        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
+        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), scaling(GNSSk)*RGNSS, leverarm);
+        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), scaling(GNSSk)*RGNSS, leverarm);
         GNSSk = GNSSk + 1;
         posErr(:, GNSSk) = zGNSS(:,GNSSk)-xest(1:3, k);
         if any(any(~isfinite(Pest(:, :, k))))
