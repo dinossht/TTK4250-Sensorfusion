@@ -5,7 +5,10 @@ K = numel(z);
 Q = eye(3);
 R = eye(2);
 doAsso = true;
-JCBBalphas = [0.5, 0.5]; % first is for joint compatibility, second is individual 
+% Du kan se på individual som gatesize - martin
+% Individual ligger mellom disse verdiene:  1-chi2cdf([9,25],2)
+% Og vi har joint på sånn 1e-3
+JCBBalphas = [1e-7, 1e-7]; % first is for joint compatibility, second is individual 
 slam = EKFSLAM(Q, R, doAsso, JCBBalphas);
 
 % allocate
@@ -22,7 +25,7 @@ Ppred{1} = zeros(3, 3); % we also say that we are 100% sure about that
 
 figure(10); clf;
 axAsso = gca;
-N = 100;%K;
+N = K;
 doAssoPlot = true; % set to true to se the associations that are done
 for k = 1:N
 	display(N-k);

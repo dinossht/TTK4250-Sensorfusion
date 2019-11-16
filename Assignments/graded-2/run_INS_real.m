@@ -3,7 +3,7 @@ load task_real;
 IMUTs = diff(timeIMU);
 dt = mean(IMUTs);
 K = size(zAcc,2);
-K = round(K / 10);
+K = round(K / 1);
 %% Measurement noise
 % GNSS Position  measurement
 p_std =  [0.300    0.300    0.508]'; % Measurement noise
