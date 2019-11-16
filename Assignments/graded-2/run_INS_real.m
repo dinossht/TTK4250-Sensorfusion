@@ -3,20 +3,20 @@ load task_real;
 IMUTs = diff(timeIMU);
 dt = mean(IMUTs);
 K = size(zAcc,2);
-K = round(K / 1);
+K = round(K / 10);
 %% Measurement noise
 % GNSS Position  measurement
-p_std =  [0.300    0.300    0.508]'; % Measurement noise
+p_std =  0.2*[0.300    0.300    0.508]'; % Measurement noise
 RGNSS = diag(p_std.^2);
 
 % accelerometer
-qA = 1.4101e-04; % accelerometer measurement noise covariance
-qAb = 1.4101e-05; % accelerometer bias driving noise covariance
-pAcc = 0;  % accelerometer bias reciprocal time constant
+qA = 10*1.4101e-04; % accelerometer measurement noise covariance
+qAb = 1000*1.4101e-05; % accelerometer bias driving noise covariance
+pAcc = 1e-9;  % accelerometer bias reciprocal time constant
 
-qG = 2.0552e-07; % gyro measurement noise covariance
-qGb = 2.0552e-08;  % gyro bias driving noise covariance
-pGyro = 0; % gyrp bias reciprocal time constant
+qG = 1000*2.0552e-07; % gyro measurement noise covariance
+qGb = 5000*2.0552e-08;  % gyro bias driving noise covariance
+pGyro = 1e-9; % gyrp bias reciprocal time constant
 
 
 %% Estimator
