@@ -1,3 +1,4 @@
+clear; close all; clc;
 %% data loading
 addpath('./victoria_park');
 load('aa3_dr.mat');
@@ -17,13 +18,13 @@ car.a = 0.95; % laser distance in front of first axel
 car.b = 0.5; % laser distance to the left of center
 
 % the SLAM parameters
-sigmas = ...
+sigmas = [1, 0.1, 1]; % what is x, y, a car has more process noise in forward direction
 CorrCoeff = [1, 0, 0; 0, 1, 0.9; 0, 0.9, 1];
 Q = diag(sigmas) * [1, 0, 0; 0, 1, 0.9; 0, 0.9, 1] * diag(sigmas); % (a bit at least) emprically found, feel free to change
 
-R = ...
+R = diag([0.5 pi/60].^2);
 
-JCBBalphas = [..., ...]; % first is for joint compatibility, second is individual 
+JCBBalphas = [0.5, 0.5]; % first is for joint compatibility, second is individual 
 sensorOffset = [car.a + car.L; car.b];
 slam = EKFSLAM(Q, R, true, JCBBalphas, sensorOffset);
 
