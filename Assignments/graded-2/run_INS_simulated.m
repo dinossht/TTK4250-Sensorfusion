@@ -9,13 +9,13 @@ p_std =  [0.300    0.300    0.508]'; % Measurement noise
 RGNSS = diag(p_std.^2);
 
 % accelerometer
-qA = 1.4101e-04; % accelerometer measurement noise covariance
-qAb = 1.4101e-05; % accelerometer bias driving noise covariance
-pAcc = 0;  % accelerometer bias reciprocal time constant
+qA = 10*1.4101e-04; % accelerometer measurement noise covariance
+qAb = 1000*1.4101e-05; % accelerometer bias driving noise covariance
+pAcc = 1e-9;  % accelerometer bias reciprocal time constant
 
-qG = 2.0552e-07; % gyro measurement noise covariance
-qGb = 2.0552e-08;  % gyro bias driving noise covariance
-pGyro = 0; % gyrp bias reciprocal time constant
+qG = 1000*2.0552e-07; % gyro measurement noise covariance
+qGb = 5000*2.0552e-08;  % gyro bias driving noise covariance
+pGyro = 1e-9; % gyrp bias reciprocal time constant
 
 %% Estimator
 eskf = ESKF(qA, qG, qAb, qGb, pAcc, pGyro);
@@ -41,13 +41,15 @@ Ppred(10:12, 10:12, 1) = eye(3);
 Ppred(13:15, 13:15, 1) = eye(3);
 
 %% run
-N = 90000;
+N = 90000/1;
 GNSSk = 1;
 for k = 1:N
-        
+    if mod(k,10000) == 0
+        display(k)
+    end
     if  timeIMU(k) >= timeGNSS(GNSSk)
-        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
-        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);
+        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);%,leverarm);
+        [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), RGNSS);%,leverarm);
 
             
         GNSSk = GNSSk  + 1;
