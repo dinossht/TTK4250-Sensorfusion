@@ -160,21 +160,21 @@ text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % IMM-PDA
 
 % sensor 
-r = 6;
+r = 25;
 lambda = 0.0000982474;
 PD = 0.95;
 gateSize = 5^2;
 
 % dynamic models
 qCV = 0.05;
-qCT = [0.005, 0.000025];
+qCT = [0.01, 0.000025];
 x0 = [0; 0; 2; 0; 0];
 P0 = diag([25, 25, 3, 3, 0.0005].^2);
 
 % markov chain (you are free to parametrize this in another way)
 PI11 = 0.95;
-PI22 = 0.95;
-p10 = 0.5;  % initial mode probability
+PI22 = 0.9;
+p10 = 0.7;  % initial mode probability
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PI = [PI11, (1 - PI22); (1 - PI11), PI22]; assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
 sprobs0 = [p10; (1 - p10)]; assert(sum(sprobs0) == 1, 'initial mode probabilities must sum to 1');

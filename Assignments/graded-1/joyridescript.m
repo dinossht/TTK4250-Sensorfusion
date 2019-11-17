@@ -189,14 +189,14 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % sensor 
 r = 10^2;
 PD = 0.9;
-lambda = 1e-12;%0.0000982474;
+lambda = 1e-8;%0.0000982474;
 gateSize = 5^2;
 
 % dynamic models
-qCV = 10
-qCT = [0.01 0.00025];
+qCV = 0.5
+qCT = [0.05 0.001];
 qCVh = 10;
-modIdx = 1:3;%1:3; 
+modIdx = 1:2;%1:3; 
 M = numel(modIdx);
 
 x0 = [7100; 3630; 0; 0; 0]; % taken from gt
@@ -211,13 +211,13 @@ PI = [PI11, 0.025, 0.025;
     0.025, PI22, 0.025;
      0.47950,  0.47950, PI33];
 
-PI = PI(modIdx, modIdx) % select the models to use
+PI = PI(modIdx, modIdx); % select the models to use
 PI = PI./sum(PI,1); % be sure to normalize
 assert(all(sum(PI, 1) - 1 < eps),'columns of PI must sum to 1')
 
 
 sprobs0 = [1 1 1]';
-sprobs0 = sprobs0(modIdx)/sum(sprobs0(modIdx)) % select models and normalize
+sprobs0 = sprobs0(modIdx)/sum(sprobs0(modIdx)); % select models and normalize
 assert(all(sprobs0 > 0), 'probabilities must be positive')
 
 
@@ -288,29 +288,32 @@ plot(Xgt(1,:), Xgt(2, :));
 scatter(Zmat(1,:), Zmat(2,:))
 axis('equal')
 title(sprintf('posRMSE = %.3f, velRMSE = %.3f, peakPosDev = %.3f, peakVelDev = %.3f',posRMSE, velRMSE, peakPosDeviation, peakVelDeviation))
-%{
+
 figure(7); clf; hold on; grid on;
 subplot(3,1,1);
 hold on; grid on;
 plot(sqrt(sum(xest(3:4,:).^2,1)))
 plot(sqrt(sum(Xgt(3:4,:).^2,1)))
 ylabel('speed')
+legend('estimate','true')
 subplot(3,1,2);
 hold on; grid on;
 plot(atan2(xest(4,:), xest(3,:)))
 plot(atan2(Xgt(4,:), Xgt(3,:)))
 ylabel('theta')
+legend('estimate','true')
 subplot(3,1,3)
 hold on; grid on;
 plot(diff(unwrap(atan2(xest(4,:), xest(3,:))))./Ts')
 plot(diff(unwrap(atan2(Xgt(4,:), Xgt(3,:))))./Ts')
 ylabel('omega')
-%}
+legend('estimate','true')
+
 figure(8); clf;
 plot(probhat');
 grid on;
 legend('CV','CT','CV-high');
-%{
+
 figure(9); clf;
 subplot(2,1,1); 
 plot(poserr); grid on;
@@ -367,6 +370,7 @@ for k = plotRange
     maxG = -1e20 * ones(2,1);
     [skupd, xkupd, Pkupd] = tracker.conditionalUpdate(Z{k}(:, gated), probbar(:, k), xbar(:, :, k), Pbar(:, :, :, k));
     beta = tracker.associationProbabilities(Z{k}(:, gated), probbar(:, k), xbar(:, :, k), Pbar(:, :, :, k));
+    plot(squeeze(Xgt(1, 1:(k-1))), squeeze(Xgt(2, 1:(k-1)))','Color', 'k');
     for s = 1:M
         plot(squeeze(xhat(1, s, 1:(k-1))), squeeze(xhat(2, s, 1:(k-1)))','Color', co(s,:));
         axis([minAx(1), maxAx(1), minAx(2), maxAx(2)])
@@ -408,7 +412,8 @@ for k = plotRange
         end
     end
     axis([1, plotRange(end), 0, 1])
+    legend('CV','CT');
     drawnow;
-    pause(plotpause)
+    pause();
 end
 %}
