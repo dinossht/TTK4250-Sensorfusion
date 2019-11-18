@@ -8,14 +8,17 @@ steps = size(zAcc,2);
 p_std =  [0.300    0.300    0.508]'; % Measurement noise
 RGNSS = diag(p_std.^2);
 
-% accelerometer
-qA = 10*1.4101e-04; % accelerometer measurement noise covariance
-qAb = 1000*1.4101e-05; % accelerometer bias driving noise covariance
-pAcc = 1e-9;  % accelerometer bias reciprocal time constant
+param1 = 10;
+param2 = 1000;
 
-qG = 1000*2.0552e-07; % gyro measurement noise covariance
-qGb = 5000*2.0552e-08;  % gyro bias driving noise covariance
-pGyro = 1e-9; % gyrp bias reciprocal time constant
+% accelerometer
+qA = param1*1.1222e-04; % accelerometer measurement noise covariance
+qAb = param1*1.4101e-05; % accelerometer bias driving noise covariance
+pAcc = 1e-11;  % accelerometer bias reciprocal time constant
+
+qG = param2*2.2092e-07; % gyro measurement noise covariance
+qGb = param2*2.0552e-08;  % gyro bias driving noise covariance
+pGyro = 1e-11; % gyrp bias reciprocal time constant
 
 %% Estimator
 eskf = ESKF(qA, qG, qAb, qGb, pAcc, pGyro);
