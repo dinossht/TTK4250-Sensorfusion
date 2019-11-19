@@ -160,20 +160,20 @@ text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % IMM-PDA
 
 % sensor 
-r = 25;
-lambda = 0.0000982474;
+r = 6;%25;
+lambda = 1e-4;%;0.001;
 PD = 0.95;
 gateSize = 5^2;
 
 % dynamic models
-qCV = 0.05;
-qCT = [0.01, 0.000025];
+qCV = 0.025;
+qCT = [0.05, 0.00025];%[0.01, 0.000025];
 x0 = [0; 0; 2; 0; 0];
 P0 = diag([25, 25, 3, 3, 0.0005].^2);
 
 % markov chain (you are free to parametrize this in another way)
 PI11 = 0.95;
-PI22 = 0.9;
+PI22 = 0.95;
 p10 = 0.7;  % initial mode probability
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 PI = [PI11, (1 - PI22); (1 - PI11), PI22]; assert(all(sum(PI, 1) == [1, 1]),'columns of PI must sum to 1')
@@ -213,7 +213,7 @@ for k=1:100
     % Total state mean and cov
     [xest(:, k), Pest(:, :, k)] =  tracker.imm.estimate(probhat(: , k), xhat(:, :, k), Phat(:, :, :, k));
     
-    NEES(k) = (xest(:, k) - Xgt(:, k))' * (Pest(:, :, k) \ (xest(:, k) - Xgt(:, k)));
+    NEES(k) = (xest(1:4, k) - Xgt(1:4, k))' * (Pest(1:4, 1:4, k) \ (xest(1:4, k) - Xgt(1:4, k)));
     NEESpos(k) = (xest(1:2, k) - Xgt(1:2, k))' * (Pest(1:2, 1:2, k ) \ (xest(1:2, k) - Xgt(1:2, k)));
     NEESvel(k) = (xest(3:4, k) - Xgt(3:4, k))' * (Pest(3:4, 3:4, k ) \ (xest(3:4, k) - Xgt(3:4, k)));
     if k < 100
@@ -231,11 +231,11 @@ peakPosDeviation = max(poserr);
 peakVelDeviation = max(velerr);
 
 % consistency
-CI2K = chi2inv([0.025, 0.975], K*2)/K
+CI2K = chi2inv([0.025, 0.975], K*2)/K;
 ANEESpos = mean(NEESpos)
 ANEESvel = mean(NEESvel)
 
-CI4K = chi2inv([0.025, 0.975], K*4)/K
+CI4K = chi2inv([0.025, 0.975], K*4)/K;
 ANEES = mean(NEES)
 
 % plot
@@ -243,48 +243,62 @@ figure(6); clf; hold on; grid on;
 plot(xest(1,:), xest(2,:));
 plot(Xgt(1,:), Xgt(2, :));
 axis('equal')
+legend('Estimated', 'Ground truth');
 title(sprintf('posRMSE = %.3f, velRMSE = %.3f, peakPosDev = %.3f, peakVelDev = %.3f',posRMSE, velRMSE, peakPosDeviation, peakVelDeviation))
 
 figure(7); clf; hold on; grid on;
 plot(xest(5,:))
 plot(Xgt(5,:))
+legend('Estimated', 'Ground truth');
 
 figure(8); clf;
 plot(probhat');
+legend('CV', 'CT');
+
 grid on;
 
 figure(9); clf;
 subplot(2,1,1); 
 plot(poserr); grid on;
 ylabel('position error')
+
+xlabel('Timestep');
 subplot(2,1,2);
 plot(velerr); grid on;
 ylabel('velocity error')
+
+xlabel('Timestep');
 
 figure(10); clf;
 subplot(3,1,1);
 plot(NEES); grid on; hold on;
 ylabel('NEES');
+xlabel('Timestep');
 ciNEES = chi2inv([0.05, 0.95], 4);
 inCI = sum((NEES >= ciNEES(1)) .* (NEES <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
-text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+title(sprintf('%.2f%% inside CI', inCI))
+%text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 
 subplot(3,1,2);
 plot(NEESpos); grid on; hold on;
 ylabel('NEESpos');
+xlabel('Timestep');
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESpos >= ciNEES(1)) .* (NEESpos <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
-text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+title(sprintf('%.2f%% inside CI', inCI))
+%text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 
 subplot(3,1,3);
 plot(NEESvel); grid on; hold on;
 ylabel('NEESvel');
+xlabel('Timestep');
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
-text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+title(sprintf('%.2f%% inside CI', inCI))
+%text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 %%
 %estimation "movie"
 mTL = 0.2; % maximum transparancy (between 0 and 1);
@@ -353,5 +367,5 @@ for k = plotRange
     end
     axis([1, plotRange(end), 0, 1])
     drawnow;
-    pause(plotpause)
+    pause()
 end
