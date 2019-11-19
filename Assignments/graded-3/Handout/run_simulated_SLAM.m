@@ -2,14 +2,23 @@ clear; close all; clc;
 load simulatedSLAM;
 K = numel(z);
 %%
-Q = eye(3);
-R = eye(2);
+%Q = diag([0.3 0.3 5*pi/180].^2);  
+%R = diag([1 5*pi/180].^2);
+
 doAsso = true;
 % Du kan se på individual som gatesize - martin
 % Individual ligger mellom disse verdiene:  1-chi2cdf([9,25],2)
 % Og vi har joint på sånn 1e-3
-JCBBalphas = [1e-7, 1e-7]; % first is for joint compatibility, second is individual 
+
+
+Q = diag([0.3 0.5*0.3 5*pi/180].^2);  
+R = diag([1 5*pi/180].^2);
+
+%3^2 5^2
+JCBBalphas = [1e-8, (1-chi2cdf(25,2))]; % first is for joint compatibility, second is individual 
 slam = EKFSLAM(Q, R, doAsso, JCBBalphas);
+
+%% individual
 
 % allocate
 xpred = cell(1, K);

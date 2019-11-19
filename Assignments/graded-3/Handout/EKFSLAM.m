@@ -178,8 +178,9 @@ classdef EKFSLAM
                 
                 rot = rotmat2d(zj(2) + eta(3));
 
-                B2W = rotmat2d(eta(3));
-                lmnew(inds) = eta(1:2) + B2W*([zj(1)*cos(zj(2)); zj(1)*sin(zj(2))] + obj.sensOffset);
+                lmnew(inds) = zj(1)*rot(:,1) + eta(1:2) + rotmat2d(eta(3))*obj.sensOffset;
+                %B2W = rotmat2d(eta(3));
+                %lmnew(inds) = eta(1:2) + B2W*([zj(1)*cos(zj(2)); zj(1)*sin(zj(2))] + obj.sensOffset);
                 
                 Gx(inds, :) =  [I2 zj(1)*rot(:,2) + R_plus_pihalf*obj.sensOffset]; % jac h^-1 wrt. x
                 Gz =  rot*diag([1,zj(1)]);% jac h^-1 wrt. z
