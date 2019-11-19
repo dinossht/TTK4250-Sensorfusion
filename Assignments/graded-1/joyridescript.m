@@ -189,12 +189,12 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % sensor 
 r = 10^2;
 PD = 0.9;
-lambda = 1e-8;%0.0000982474;
-gateSize = 5^2;
+lambda = 1e-9;%0.0000982474;
+gateSize = 6^2;
 
 % dynamic models
-qCV = 0.5
-qCT = [0.05 0.001];
+qCV = 0.5;%0.025;%0.5;
+qCT = [0.5, 0.001];%[0.05 0.00025];
 qCVh = 10;
 modIdx = 1:2;%1:3; 
 M = numel(modIdx);
@@ -295,22 +295,26 @@ hold on; grid on;
 plot(sqrt(sum(xest(3:4,:).^2,1)))
 plot(sqrt(sum(Xgt(3:4,:).^2,1)))
 ylabel('speed')
+xlabel('Timestep');
 legend('estimate','true')
 subplot(3,1,2);
 hold on; grid on;
 plot(atan2(xest(4,:), xest(3,:)))
 plot(atan2(Xgt(4,:), Xgt(3,:)))
 ylabel('theta')
+xlabel('Timestep');
 legend('estimate','true')
 subplot(3,1,3)
 hold on; grid on;
 plot(diff(unwrap(atan2(xest(4,:), xest(3,:))))./Ts')
 plot(diff(unwrap(atan2(Xgt(4,:), Xgt(3,:))))./Ts')
 ylabel('omega')
+xlabel('Timestep');
 legend('estimate','true')
 
 figure(8); clf;
 plot(probhat');
+xlabel('Timestep');
 grid on;
 legend('CV','CT','CV-high');
 
@@ -318,14 +322,17 @@ figure(9); clf;
 subplot(2,1,1); 
 plot(poserr); grid on;
 ylabel('position error')
+xlabel('Timestep');
 subplot(2,1,2);
 plot(velerr); grid on;
 ylabel('velocity error')
+xlabel('Timestep');
 
 figure(10); clf;
 subplot(3,1,1);
 plot(NEES); grid on; hold on;
 ylabel('NEES');
+xlabel('Timestep');
 ciNEES = chi2inv([0.05, 0.95], 4);
 inCI = sum((NEES >= ciNEES(1)) .* (NEES <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
@@ -334,6 +341,7 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 subplot(3,1,2);
 plot(NEESpos); grid on; hold on;
 ylabel('NEESpos');
+xlabel('Timestep');
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESpos >= ciNEES(1)) .* (NEESpos <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
@@ -342,6 +350,7 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 subplot(3,1,3);
 plot(NEESvel); grid on; hold on;
 ylabel('NEESvel');
+xlabel('Timestep');
 ciNEES = chi2inv([0.05, 0.95], 2);
 inCI = sum((NEESvel >= ciNEES(1)) .* (NEESvel <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
