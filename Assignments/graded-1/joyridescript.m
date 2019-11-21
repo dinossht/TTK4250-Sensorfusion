@@ -189,7 +189,7 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % sensor 
 r = 10^2;
 PD = 0.9;
-lambda = 1e-9;%0.0000982474;
+lambda = 1e-7;%0.0000982474; //better with not too low clutter. 
 gateSize = 6^2;
 
 % dynamic models
