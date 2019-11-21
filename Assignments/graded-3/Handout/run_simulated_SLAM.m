@@ -15,7 +15,7 @@ Q = diag([0.3 0.5*0.3 5*pi/180].^2);
 R = diag([1 5*pi/180].^2);
 
 %3^2 5^2
-JCBBalphas = [1e-8, (1-chi2cdf(25,2))]; % first is for joint compatibility, second is individual 
+JCBBalphas = [0.05, (1-chi2cdf(6,2))]; % first is for joint compatibility, second is individual 
 slam = EKFSLAM(Q, R, doAsso, JCBBalphas);
 
 %% individual
