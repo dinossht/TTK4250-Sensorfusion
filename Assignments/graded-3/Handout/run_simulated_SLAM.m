@@ -146,6 +146,27 @@ grid on;
 ylabel('NIS');
 xlabel('timestep');
 
+%% Correct NIS calculations
+for k = 1:N
+    len_vk(k) = 2 * nnz(a{k});
+    CI(:,k) = chi2inv([alpha/2; 1 - alpha/2], len_vk(k));
+    CInormalized(:,k) = CI(:,k) / len_vk(k);
+end
+%%
+figure(10); clf;
+hold on;
+plot(1:N, NIS(1:N));
+insideCI = mean((CInormalized(1,:) < NIS) .* (NIS <= CInormalized(2,:)))*100;
+plot(CInormalized(1,:),'r--'); hold on;
+plot(CInormalized(2,:),'r--'); hold on;
+
+title(sprintf('NIS over time, with %0.1f%% inside %0.1f%% CI', insideCI, (1-alpha)*100));
+grid on;
+ylabel('NIS');
+xlabel('timestep');
+
+
+
 %% run a movie
 pauseTime = 0.05;
 fig = figure(4);
