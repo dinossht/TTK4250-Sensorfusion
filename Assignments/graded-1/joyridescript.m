@@ -189,7 +189,7 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 % sensor 
 r = 10^2;
 PD = 0.9;
-lambda = 1e-7;%0.0000982474; //better with not too low clutter. 
+lambda = 1e-6;%0.0000982474; //better with not too low clutter. 
 gateSize = 6^2;
 
 % dynamic models
@@ -359,7 +359,7 @@ text(K*1.04, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 %estimation "movie"
 mTL = 0.2; % maximum transparancy (between 0 and 1);
 plotpause = 1; % lenght to pause between time steps;
-plotRange = 2:K; % the range to go through
+plotRange = 117:K; % the range to go through
 N = 50; % number of points to use for ellipse;
 
 %k = 31; assert(all([k > 1, k <= K]), 'K must be in proper range')
@@ -423,6 +423,8 @@ for k = plotRange
     axis([1, plotRange(end), 0, 1])
     legend('CV','CT');
     drawnow;
+    
     pause();
+    
 end
 %}
