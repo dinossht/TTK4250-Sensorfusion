@@ -301,7 +301,7 @@ classdef ESKF
         end
         
         
-        function NIS = NISGNSS(obj, xnom, P, zGNSSpos, RGNSSpos, leverarm)
+        function [NIS,NISxy,NISz] = NISGNSS(obj, xnom, P, zGNSSpos, RGNSSpos, leverarm)
             % Calculates the NIS for a GNSS position measurement
             %
             % xnom (16 x 1): nominal state
@@ -316,6 +316,8 @@ classdef ESKF
             end
             [innov, S] = obj.innovationGNSS(xnom, P, zGNSSpos, RGNSSpos, leverarm);
             NIS = innov'*inv(S)*innov;
+            NISz = innov(3)'*inv(S(3,3))*innov(3);
+            NISxy = innov(1:2)'*inv(S(1:2,1:2))*innov(1:2);
         end
         
         function deltaX = deltaX(~, xnom, xtrue)

@@ -7,7 +7,7 @@ K = round(K / 1);
 %% Measurement noise
 % GNSS Position  measurement
 %p_std =  0.2*[0.300    0.300    0.508]'; % Measurement noise'
-p_std =  [0.05    0.05  0.075]'; % Measurement noise
+p_std =  3*[0.05    0.05  0.075]'; % Measurement noise
 RGNSS = diag(p_std.^2);
 
 % accelerometer
@@ -60,7 +60,7 @@ for k = 1:N
     end
     
     if timeGNSS(GNSSk) < t
-        NIS(GNSSk) = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), scaling(GNSSk)*RGNSS, leverarm);
+        [NIS(GNSSk),NISxy(GNSSk),NISz(GNSSk)]   = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), scaling(GNSSk)*RGNSS, leverarm);
         [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), scaling(GNSSk)*RGNSS, leverarm);
         GNSSk = GNSSk + 1;
         posErr(:, GNSSk) = zGNSS(:,GNSSk)-xest(1:3, k);
@@ -136,6 +136,30 @@ hold on;
 plot([0, timeIMU(N) - timeIMU(1)], (CI3*ones(1,2))', 'r--');
 insideCI = mean((CI3(1) <= NIS).* (NIS <= CI3(2)));
 title(sprintf('NIS (%.3g%% inside %.3g%% confidence intervall)', 100*insideCI, 100*(1 - alpha)));
+
+
+figure(7);
+alpha = 0.05;
+CI3 = chi2inv([alpha/2; 1 - alpha/2; 0.5], 2);
+subplot(211);
+plot(timeGNSS(1:(GNSSk - 1)) - timeIMU(1), NISxy);
+grid on;
+hold on;
+plot([0, timeIMU(N) - timeIMU(1)], (CI3*ones(1,2))', 'r--');
+insideCI = mean((CI3(1) <= NISxy).* (NISxy <= CI3(2)));
+title(sprintf('NIS-xy (%.3g%% inside %.3g%% confidence intervall)', 100*insideCI, 100*(1 - alpha)));
+
+subplot(212);
+CI3 = chi2inv([alpha/2; 1 - alpha/2; 0.5], 1);
+plot(timeGNSS(1:(GNSSk - 1)) - timeIMU(1), NISz);
+grid on;
+hold on;
+plot([0, timeIMU(N) - timeIMU(1)], (CI3*ones(1,2))', 'r--');
+insideCI = mean((CI3(1) <= NISz).* (NISz <= CI3(2)));
+title(sprintf('NIS-z (%.3g%% inside %.3g%% confidence intervall)', 100*insideCI, 100*(1 - alpha)));
+
+
+
 
 figure(4); clf;
 gaussCompare = sum(randn(3, numel(NIS)).^2, 1);
