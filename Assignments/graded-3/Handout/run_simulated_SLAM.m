@@ -11,11 +11,11 @@ doAsso = true;
 % Og vi har joint på sånn 1e-3
 
 
-Q = diag([0.3 0.5*0.3 5*pi/180].^2);  
+Q = diag([0.1 0.1 1*pi/180].^2);  
 R = diag([1 5*pi/180].^2);
 
 %3^2 5^2
-JCBBalphas = [0.05, (1-chi2cdf(6,2))]; % first is for joint compatibility, second is individual 
+JCBBalphas = [0.05, 0.05]; % first is for joint compatibility, second is individual 
 slam = EKFSLAM(Q, R, doAsso, JCBBalphas);
 
 %% individual
@@ -29,7 +29,7 @@ a = cell(1, K);
 
 % init
 xpred{1} = poseGT(:,1); % we start at the correct position for reference
-Ppred{1} = zeros(3, 3); % we also say that we are 100% sure about that
+Ppred{1} = eye(3);%(3, 3); % we also say that we are 100% sure about that
 
 
 figure(10); clf;
@@ -63,6 +63,27 @@ for k = 1:N
     end
     %}
 end
+
+tot = 0;
+for k = 1:N
+    err(1:3,k) = (xhat{k}(1:3) - poseGT(1:3,k));
+    tot = tot + err(1:3,k).^2;
+    
+    if err(3,k) > pi
+        err(3,k) = err(3,k) - 2*pi;
+    end
+    NEESpose(k) = (err(1:3,k))' / (Phat{k}(1:3, 1:3)) * (err(1:3,k));
+ 
+end
+
+
+poserr = sqrt(sum((err(1:2,:)).^2, 1));
+posRMSE = sqrt(mean(poserr.^2))
+headerr = sqrt(sum((err(3,:)).^2, 1));
+headRMSE = sqrt(mean(headerr.^2))
+
+chi2inv([0.05, 0.95], N*3)/N;
+ANEESpos = mean(NEESpose)
 
 % plotting
 figure(3);
@@ -147,12 +168,83 @@ ylabel('NIS');
 xlabel('timestep');
 
 %% Correct NIS calculations
+
+
+% NEES & RMSE
+% tot = 0;
+% for k = 1:N
+%     err(1:3,k) = (xhat{k}(1:3) - poseGT(1:3,k));
+%     tot = tot + err(1:3,k).^2;
+%     
+%     if err(3,k) > pi
+%         err(3,k) = err(3,k) - 2*pi;
+%     end
+%     NEESpose(k) = (err(1:3,k))' / (Phat{k}(1:3, 1:3)) * (err(1:3,k));
+%  
+% end
+% 
+% 
+% poserr = sqrt(sum((err(1:2,:)).^2, 1));
+% posRMSE = sqrt(mean(poserr.^2))
+% headerr = sqrt(sum((err(3,:)).^2, 1));
+% headRMSE = sqrt(mean(headerr.^2))
+% 
+% chi2inv([0.05, 0.95], N*3)/N;
+% ANEESpos = mean(NEESpose)
+% 
+% figure(5); clf;
+% plot(NEESpose); grid on; hold on;
+% ylabel('NEESpose');
+% ciNEES = chi2inv([0.05, 0.95], 3);
+% inCI = sum((NEESpose >= ciNEES(1)) .* (NEESpose <= ciNEES(2)))/K * 100;
+% plot([1,K], repmat(ciNEES',[1,2])','r--')
+% text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+
+
+%%
+
+figure(6);
+
+subplot(2,1,1)
+
+plot(err(1,:));
+grid on;
+ylabel('error');
+xlabel('Timestep');
+title('Error in x');
+
+
+subplot(2,1,2)
+plot(err(2,:));
+grid on;
+ylabel('error');
+xlabel('Timestep');
+title('Error in y');
+
+alpha = 0.05;
+
+
+figure(7); clf;
+
+plot(NEESpose); grid on; hold on;
+
+ciNEES = (chi2inv([0.025, 0.975], 3))/3;
+inCI = sum((NEESpose >= ciNEES(1)) .* (NEESpose <= ciNEES(2)))/K * 100;
+plot([1,K], repmat(ciNEES',[1,2])','r--')
+text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+
+title(sprintf('NEES over time, with %0.1f%% inside %0.1f%% CI', insideCI, (1-alpha)*100));
+grid on;
+ylabel('NIS');
+xlabel('timestep');
+
+
 for k = 1:N
     len_vk(k) = 2 * nnz(a{k});
     CI(:,k) = chi2inv([alpha/2; 1 - alpha/2], len_vk(k));
     CInormalized(:,k) = CI(:,k) / len_vk(k);
 end
-%%
+
 figure(10); clf;
 hold on;
 plot(1:N, NIS(1:N));
