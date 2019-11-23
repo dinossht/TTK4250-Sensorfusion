@@ -29,7 +29,7 @@ a = cell(1, K);
 
 % init
 xpred{1} = poseGT(:,1); % we start at the correct position for reference
-Ppred{1} = eye(3);%(3, 3); % we also say that we are 100% sure about that
+Ppred{1} = 0.0001*eye(3);%(3, 3); % we also say that we are 100% sure about that
 
 
 figure(10); clf;
@@ -72,7 +72,9 @@ for k = 1:N
     if err(3,k) > pi
         err(3,k) = err(3,k) - 2*pi;
     end
-    NEESpose(k) = (err(1:3,k))' / (Phat{k}(1:3, 1:3)) * (err(1:3,k));
+    if k ~= 1
+        NEESpose(k) = (err(1:3,k))' / (Phat{k}(1:3, 1:3)) * (err(1:3,k));
+    end
  
 end
 
@@ -150,22 +152,22 @@ grid on;
 %
 
 %% consistency: what to do with variable measurement size..?
-alpha = 0.05;
-ANIS = mean(NIS)
-ACI = chi2inv([alpha/2; 1 - alpha/2], 1)/N % NOT CORRECT NOW
-CI = chi2inv([alpha/2; 1 - alpha/2], 1); % NOT CORRECT NOW
-warning('These consistency intervals have wrong degrees of freedom')
-
-figure(5); clf;
-hold on;
-plot(1:N, NIS(1:N));
-insideCI = mean((CI(1) < NIS) .* (NIS <= CI(2)))*100;
-plot([1, N], (CI*ones(1, 2))','r--');
-
-title(sprintf('NIS over time, with %0.1f%% inside %0.1f%% CI', insideCI, (1-alpha)*100));
-grid on;
-ylabel('NIS');
-xlabel('timestep');
+% alpha = 0.05;
+% ANIS = mean(NIS)
+% ACI = chi2inv([alpha/2; 1 - alpha/2], 1)/N % NOT CORRECT NOW
+% CI = chi2inv([alpha/2; 1 - alpha/2], 1); % NOT CORRECT NOW
+% warning('These consistency intervals have wrong degrees of freedom')
+% 
+% figure(5); clf;
+% hold on;
+% plot(1:N, NIS(1:N));
+% insideCI = mean((CI(1) < NIS) .* (NIS <= CI(2)))*100;
+% plot([1, N], (CI*ones(1, 2))','r--');
+% 
+% title(sprintf('NIS over time, with %0.1f%% inside %0.1f%% CI', insideCI, (1-alpha)*100));
+% grid on;
+% ylabel('NIS');
+% xlabel('timestep');
 
 %% Correct NIS calculations
 
@@ -233,7 +235,7 @@ inCI = sum((NEESpose >= ciNEES(1)) .* (NEESpose <= ciNEES(2)))/K * 100;
 plot([1,K], repmat(ciNEES',[1,2])','r--')
 text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
 
-title(sprintf('NEES over time, with %0.1f%% inside %0.1f%% CI', insideCI, (1-alpha)*100));
+title(sprintf('NEES over time, with %0.1f%% inside %0.1f%% CI', inCI, (1-alpha)*100));
 grid on;
 ylabel('NIS');
 xlabel('timestep');
