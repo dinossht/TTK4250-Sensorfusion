@@ -24,7 +24,7 @@ Q = diag(sigmas) * [1, 0, 0; 0, 1, 0.9; 0, 0.9, 1] * diag(sigmas); % (a bit at l
 
 R = diag([1e-2, 1e-2]);
 
-JCBBalphas = [1e-5, 1e-3]; % first is for joint compatibility, second is individual 
+JCBBalphas = [1e-5, 1e-3]; % fiwWrst is for joint compatibility, second is individual 
 sensorOffset = [car.a + car.L; car.b];
 slam = EKFSLAM(Q, R, true, JCBBalphas, sensorOffset);
 
@@ -51,6 +51,9 @@ shLmk = scatter(ax, nan, nan, 'rx');
 shZ = scatter(ax, nan, nan, 'bo');
 th = title(ax, 'start');
 
+theta = -pi/12;
+gpsCounter = 1;
+count = 1;
 for k = 1:N
     if mk < mK && timeLsr(mk) <= timeOdo(k+1)
         dt = timeLsr(mk) - t;
@@ -64,7 +67,29 @@ for k = 1:N
         z = detectTreesI16(LASER(mk,:));
         [eta, P, NIS(k), a{k}] = slam.update(eta, P, z);
         xupd(:, mk) = eta(1:3); 
-        mk = mk + 1;
+
+        %% NIS calc
+        len_vk(k) = 2 * nnz(a{k});
+        if len_vk(k) > 0
+            
+            NISS(count) = NIS(k);
+
+            alpha = 0.05;
+
+            CI(:,count) = chi2inv([alpha/2; 1 - alpha/2], len_vk(k));
+            CInormalized(:,count) = CI(:,count) / len_vk(k);
+            count = count +1;
+        end
+        %% POS RMSE
+       if timeLsr(mk) >=  timeGps(gpsCounter)
+           gpsXY = [Lo_m(gpsCounter); La_m(gpsCounter)];
+           gpsTrue(:,gpsCounter) = rotmat2d(theta)*gpsXY;
+           xnew(:,gpsCounter) = xupd(1:2,mk);
+           error(:,gpsCounter) = xupd(1:2,mk)- gpsTrue(:,gpsCounter);
+           NEES(:,gpsCounter) = error(:,gpsCounter)'/(P(1:2,1:2)+4*ones(2))*error(:,gpsCounter);
+           gpsCounter = gpsCounter + 1;
+       end
+       mk = mk + 1;
         %{
         if doPlot
             lhPose.XData = [lhPose.XData, eta(1)];
@@ -106,30 +131,99 @@ scatter(eta(4:2:end), eta(5:2:end), 'rx');
 
 % what can we do with consistency..? divide by the number of associated
 % measurements? 
-figure(3); clf;
-plot(NIS);
 
-figure(4);
-fasitx = Lo_m(timeGps < timeOdo(N));
-fasity = La_m(timeGps < timeOdo(N));
-
-for i=1:length(fasitx)
-end
 
 %% NEES
-theta = pi/6;
+theta = -0.7*pi/12;
+trans = [10;-13];
 gpsCounter = 1;
-deltaT = timeLsr(1756)/1756;
-for i = 1:1756
-   if timeLsr(i) >=  timeGps(gpsCounter)
-       gpsXY = [Lo_m(gpsCounter); La_m(gpsCounter)];
-       gpsTrue(:,gpsCounter) = rotmat2d(theta)*gpsXY;
-       xnew(:,gpsCounter) = xupd(1:2,i);
-       error(:,gpsCounter) = xupd(1:2,i)- gpsTrue(:,gpsCounter);
-       gpsCounter = gpsCounter + 1;
-   end
+mk = 2;
+
+for k = 1:N
+    if mk < mK && timeLsr(mk) <= timeOdo(k+1)
+        dt = timeLsr(mk) - t;
+        if  dt >= 0
+            t = timeLsr(mk);
+        else
+            error('negative time increment...')
+        end
+
+
+        
+
+
+       if timeLsr(mk) >=  timeGps(gpsCounter)
+           gpsXY = [Lo_m(gpsCounter); La_m(gpsCounter)];
+           gpsTrue(:,gpsCounter) = rotmat2d(theta)*gpsXY + trans;
+           xnew(:,gpsCounter) = xupd(1:2,mk);
+           error(:,gpsCounter) = xupd(1:2,mk)- gpsTrue(:,gpsCounter);
+           gpsCounter = gpsCounter + 1;
+       end
+       mk = mk + 1;
+    end
+    
+    if k < K
+        dt = timeOdo(k+1) - t;
+        t = timeOdo(k+1);
+    end
+
 end
 
+
 figure(5); clf;  hold on; grid on; axis equal;
-plot(xnew(1,:), xnew(2,:)); hold on;
+scatter(xnew(1,:), xnew(2,:)); hold on;
 scatter(gpsTrue(1,:), gpsTrue(2,:), '.')
+
+posRMSE = sqrt(mean(sum(error(:,:).^2,1)))
+title(sprintf('PosRMSE:%0.2f%', posRMSE));
+
+%%
+
+figure(10); clf;
+hold on;
+plot(1:1754, NISS(1:1754));
+insideCI = mean((CInormalized(1,:) < NISS) .* (NISS <= CInormalized(2,:)))*100;
+plot(CInormalized(1,:),'r--'); hold on;
+plot(CInormalized(2,:),'r--'); hold on;
+
+title(sprintf('NIS over time, with %0.1f%% inside %0.1f%% CI', insideCI, (1-alpha)*100));
+grid on;
+ylabel('NIS');
+xlabel('timestep');
+
+
+%% 
+%{
+for k = 1:14992
+    len_vk(k) = 2 * nnz(a{k});
+    CI(:,k) = chi2inv([alpha/2; 1 - alpha/2], len_vk(k));
+    CInormalized(:,k) = CI(:,k) / len_vk(k);
+end
+
+figure(10); clf;
+hold on;
+plot(1:14992, NIS(1:14992));
+insideCI = mean((CInormalized(1,:) < NIS) .* (NIS <= CInormalized(2,:)))*100;
+plot(CInormalized(1,:),'r--'); hold on;
+plot(CInormalized(2,:),'r--'); hold on;
+
+title(sprintf('NIS over time, with %0.1f%% inside %0.1f%% CI', insideCI, (1-alpha)*100));
+grid on;
+ylabel('NIS');
+%}
+
+
+%%
+figure(7); clf;
+
+plot(NEES); grid on; hold on;
+
+ciNEES = (chi2inv([0.025, 0.975], 2))/2;
+inCI = sum((NEES >= ciNEES(1)) .* (NEES <= ciNEES(2)))/1077 * 100;
+plot([1,1077], repmat(ciNEES',[1,2])','r--')
+text(104, -5, sprintf('%.2f%% inside CI', inCI),'Rotation',90);
+
+title(sprintf('NEES over time, with %0.1f%% inside %0.1f%% CI', inCI, (1-alpha)*100));
+grid on;
+ylabel('NEES');
+xlabel('timestep');
