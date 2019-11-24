@@ -116,3 +116,20 @@ fasity = La_m(timeGps < timeOdo(N));
 for i=1:length(fasitx)
 end
 
+%% NEES
+theta = pi/6;
+gpsCounter = 1;
+deltaT = timeLsr(1756)/1756;
+for i = 1:1756
+   if timeLsr(i) >=  timeGps(gpsCounter)
+       gpsXY = [Lo_m(gpsCounter); La_m(gpsCounter)];
+       gpsTrue(:,gpsCounter) = rotmat2d(theta)*gpsXY;
+       xnew(:,gpsCounter) = xupd(1:2,i);
+       error(:,gpsCounter) = xupd(1:2,i)- gpsTrue(:,gpsCounter);
+       gpsCounter = gpsCounter + 1;
+   end
+end
+
+figure(5); clf;  hold on; grid on; axis equal;
+plot(xnew(1,:), xnew(2,:)); hold on;
+scatter(gpsTrue(1,:), gpsTrue(2,:), '.')
