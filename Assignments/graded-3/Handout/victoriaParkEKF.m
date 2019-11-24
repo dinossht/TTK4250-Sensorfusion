@@ -18,13 +18,13 @@ car.a = 0.95; % laser distance in front of first axel
 car.b = 0.5; % laser distance to the left of center
 
 % the SLAM parameters
-sigmas = [1, 0.1, 1]; % what is x, y, a car has more process noise in forward direction
+sigmas = [4e-2 , 4e-2, 2e-2]; % what is x, y, a car has more process noise in forward direction
 CorrCoeff = [1, 0, 0; 0, 1, 0.9; 0, 0.9, 1];
 Q = diag(sigmas) * [1, 0, 0; 0, 1, 0.9; 0, 0.9, 1] * diag(sigmas); % (a bit at least) emprically found, feel free to change
 
-R = diag([0.5 pi/60].^2);
+R = diag([1e-2, 1e-2]);
 
-JCBBalphas = [0.5, 0.5]; % first is for joint compatibility, second is individual 
+JCBBalphas = [1e-5, 1e-3]; % first is for joint compatibility, second is individual 
 sensorOffset = [car.a + car.L; car.b];
 slam = EKFSLAM(Q, R, true, JCBBalphas, sensorOffset);
 
@@ -65,6 +65,7 @@ for k = 1:N
         [eta, P, NIS(k), a{k}] = slam.update(eta, P, z);
         xupd(:, mk) = eta(1:3); 
         mk = mk + 1;
+        %{
         if doPlot
             lhPose.XData = [lhPose.XData, eta(1)];
             lhPose.YData = [lhPose.YData, eta(2)];
@@ -80,6 +81,7 @@ for k = 1:N
             drawnow;
             pause(0.01)
         end
+        %}
     end
     
     if k < K
@@ -101,7 +103,16 @@ plot(xupd(1, 1:(mk-1)), xupd(2, 1:(mk-1)))
 scatter(Lo_m(timeGps < timeOdo(N)), La_m(timeGps < timeOdo(N)), '.')
 scatter(eta(4:2:end), eta(5:2:end), 'rx');
 
+
 % what can we do with consistency..? divide by the number of associated
 % measurements? 
 figure(3); clf;
 plot(NIS);
+
+figure(4);
+fasitx = Lo_m(timeGps < timeOdo(N));
+fasity = La_m(timeGps < timeOdo(N));
+
+for i=1:length(fasitx)
+end
+
