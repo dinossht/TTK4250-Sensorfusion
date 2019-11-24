@@ -51,7 +51,9 @@ shLmk = scatter(ax, nan, nan, 'rx');
 shZ = scatter(ax, nan, nan, 'bo');
 th = title(ax, 'start');
 
-theta = -pi/12;
+theta = -0.7*pi/12;
+trans = [10;-13];
+
 gpsCounter = 1;
 count = 1;
 for k = 1:N
@@ -83,10 +85,10 @@ for k = 1:N
         %% POS RMSE
        if timeLsr(mk) >=  timeGps(gpsCounter)
            gpsXY = [Lo_m(gpsCounter); La_m(gpsCounter)];
-           gpsTrue(:,gpsCounter) = rotmat2d(theta)*gpsXY;
+           gpsTrue(:,gpsCounter) = rotmat2d(theta)*gpsXY + trans;
            xnew(:,gpsCounter) = xupd(1:2,mk);
            error(:,gpsCounter) = xupd(1:2,mk)- gpsTrue(:,gpsCounter);
-           NEES(:,gpsCounter) = error(:,gpsCounter)'/(P(1:2,1:2)+4*ones(2))*error(:,gpsCounter);
+           NEES(:,gpsCounter) = error(:,gpsCounter)'/(P(1:2,1:2)+4*eye(2))*error(:,gpsCounter);
            gpsCounter = gpsCounter + 1;
        end
        mk = mk + 1;
