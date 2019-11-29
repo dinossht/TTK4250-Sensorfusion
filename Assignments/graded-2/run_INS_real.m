@@ -62,8 +62,8 @@ for k = 1:N
     if timeGNSS(GNSSk) < t
         [NIS(GNSSk),NISxy(GNSSk),NISz(GNSSk)]   = eskf.NISGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), scaling(GNSSk)*RGNSS, leverarm);
         [xest(:, k), Pest(:, :, k)] = eskf.updateGNSS(xpred(:,k), Ppred(:,:,k), zGNSS(:,GNSSk), scaling(GNSSk)*RGNSS, leverarm);
-        GNSSk = GNSSk + 1;
         posErr(:, GNSSk) = zGNSS(:,GNSSk)-xest(1:3, k);
+        GNSSk = GNSSk + 1;
         if any(any(~isfinite(Pest(:, :, k))))
             error('not finite Pest at time %d',k)
         end
